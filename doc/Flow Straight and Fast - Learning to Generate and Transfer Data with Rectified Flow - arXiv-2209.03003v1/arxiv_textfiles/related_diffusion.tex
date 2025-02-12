@@ -1,0 +1,156 @@
+
+\subsection{Denoising Diffusion Models and Probability Flow ODEs}  
+\label{sec:diffusion}
+We prove that the probability flow ODEs (PF-ODEs) of \cite{song2020score} can be viewed as  nonlinear rectified flows in \eqref{equ:Lgvphi} with $X_t = \alpha_t X_1 + \beta_t \xi.$ 
+We start with introducing the algorithmic procedures of the denoising diffusion models and PF-ODEs, and refer the readers to the original works \cite{song2020score, ho2020denoising, song2020denoising} for the theoretical derivations. 
+
+The 
+denoising diffusion methods %
+learn to %
+generative models by constructing  
+an SDE model driven by a standard Brownian motion $W_t$: 
+\bbb \label{equ:ztvdw} 
+\d U_t = b(U_t, t) \dt + \sigma_t \d W_t, ~~~ U_0 \sim \tg_0,
+\eee  
+where $\sigma_t\colon [0,1]\to [0,+\infty)$ 
+is a (typically) fixed diffusion
+coefficient, $b$ is a trainable neural network, 
+and the initial distribution $\tg_0$ 
+is restricted to a spherical Gaussian distribution determined by hyper-parameter setting of the algorithm.  
+The idea is to first collapse the data into an (approximate) Gaussian distribution using a diffusion process, mostly an Ornstein-Uhlenbeck (OU) process, and then estimate 
+the generative diffusion process \eqref{equ:ztvdw} as the time reversal \citep[e.g.,][]{anderson1982reverse} of the collapsing process. 
+
+Without diving into the derivations, 
+the training loss of the VE, VP, sub-VP SDEs 
+for $b$ in \cite{song2020score} can be summarized as follows:  
+\bbb \label{equ:oud} 
+\min_{v}\int_0^1 \e{w_t \norm{v(V_t,t) -Y_t}^2_2} \dt,
+&& V_t = \alpha_t X_1 + \betatogamma_t \xi_t, && 
+Y_t = - \eta_{t} V_t  
+- \frac{\sigma_t^2 }{\betatogamma_t}\xi_t,  
+\eee 
+where $\xi_t$
+is a diffusion process satisfying $\xi_t \sim \normal(0,I)$, 
+and $\eta_t, \sigma_t$ are the hyper-parameter sequences
+of the algorithm, and $\alpha_t, \betatogamma_t$ are determined by $\eta_t, \sigma_t$ via %
+\bbb \label{equ:alphadiff}
+ \alpha_t = \exp\left(\int_t^1 \eta_s \d s \right), ~~~~~ \betatogamma_t^2 = \int_t^1 \exp\left (2\int_t^s \eta_r \d r \right)  \sigma_{s}^2 \d s. 
+\eee
+The relation in \eqref{equ:alphadiff} 
+is derived to make $\tilde V_t = V_{1-t}=\alpha_{1-t} X_1 + \beta_{1-t} \xi_t$ follow the Ornstein-Uhlenbeck (OU) processes $\d \tilde V_t = \eta_{1-t} \tilde V_t \dt + \sigma_{1-t} \d W_t$. 
+
+VE SDE, which is equivalent to SMLD in \cite{song2019generative, song2020improved}, takes $\eta_t=0$ and hence has $\alpha_t = 1$. 
+(sub-)VP SDE takes $\eta_s$ to be a linear function of $s$, yielding the exponential $\alpha_t$ in \eqref{equ:vpode}. 
+VP SDE (which is equivalent to DDPM \cite{ho2020denoising})  
+takes $\eta_t = - \frac{1}{2} \sigma_t^2$ %
+which yields that 
+$
+\alpha_t^2 + 
+\betatogamma_t^2 =1$ as shown in \eqref{equ:vpodebeta}. 
+In DDPM, it was suggested to write $b(x,t) = -\eta_t x - \frac{\sigma_t^2}{\betatogamma_t} \epsilon(x,t)$ 
+, and estimate $\epsilon$ as a neural network that predicts 
+$\xi_t$  from $(V_t,t)$. 
+
+ 
+Theoretically, the SDE in \eqref{equ:ztvdw}  with $b$ solving \eqref{equ:oud} 
+is ensured to yield $\law(U_1) = \law(X_1) = \tg_1$  
+when  initialized from $U_0 = \alpha_0X_1 + \betatogamma_0 \xi_0$, which can be approximated by $U_0 \approx \betatogamma\xi_0$ when $\alpha_0 X_1 \ll \betatogamma_0 \xi_0$. 
+
+By using the properties of Fokker-Planck equations, 
+it was observed in \cite{song2020score, song2020denoising}
+that the SDE in \eqref{equ:ztvdw} with $b$ trained in \eqref{equ:oud} can be converted into an ODE that share the same marginal laws:
+\bbb \label{equ:xtddpmbb} 
+\d Z_t = \tilde b(Z_t, t)
+\dt,~~~~\text{with}~~~~
+\tilde b(z,t) = \frac{1}{2} (b(z,t) - \eta_t z), 
+~~~~\text{starting from~~} Z_0 = U_0 = \alpha_0 X_1 + \beta_0 \xi_0. 
+\eee 
+Equivalently, we can regard $\tilde b$  as the solution of 
+\bbb \label{equ:odeobjgg}
+\min_v \int_0^1 \e{w_t \norm{v(V_t, t) - \tilde Y_t}^2_2} \dt, 
+&& V_t = \alpha_t X_1 + \betatogamma_t \xi_t, && 
+\tilde Y_t = - \eta_{t} V_t  
+- \frac{\sigma_t^2 }{2\betatogamma_t}\xi_t,
+\eee 
+which defers from \eqref{equ:ztvdw} only by a factor of $1/2$ in the second term of $Y_t$. 
+This simple equivalence holds only when  \eqref{equ:ztvdw} and \eqref{equ:xtddpmbb} use the special initialization of $
+Z_0 = U_0 = \alpha_0 X_1 + \beta_0 \xi_0$. 
+ 
+ 
+ 
+
+
+
+
+
+In the following, we are ready to prove that %
+\eqref{equ:odeobjgg} is can be viewed as %
+the nonlinear rectified flow objective in  \eqref{equ:Lgvphi} 
+using $X_t = \alpha_t X_1 +
+\betatogamma_t \xi$ with 
+$\xi \sim \normal(0, I)$. 
+We mainly need to show that $\tilde Y_t$ 
+is equivalent to $\dot X_t$ by eliminating $\eta_t$ and $\sigma_t$ using the relation in \eqref{equ:alphadiff}.
+
+\begin{pro}\label{pro:ddim}
+Assume \eqref{equ:alphadiff} hold. %
+Then \eqref{equ:odeobjgg} is equivalent to \eqref{equ:Lgvphi} with $X_t = \alpha_t X_1 + \betatogamma_t \xi$.  
+\end{pro} 
+\begin{proof} 
+First, note that we can take $\xi_t = \xi$ for all time $t$, as the correlation structure of $\xi_t$ does not impact the result. 
+Hence, we have $V_t = X_t = \alpha_t X_1 + \beta_t \xi$. 
+To show the equivalence of \eqref{equ:odeobjgg} and \eqref{equ:Lgvphi}, 
+we just need to verify that $\dot X_t = \tilde Y_t$. %
+\bb 
+\tilde Y_t 
+& =
+ -\eta_t X_t + \frac{\sigma_t^2}{2\betatogamma_t^2} (
+\alpha_t X_1 - X_t) \\ 
+& = -\dot \eta_t \left ( \alpha_t X_1 + \betatogamma_t \xi \right) + \frac{\sigma_t^2}{2\betatogamma_t}  \xi \\ 
+& = - \dot \eta \alpha_t X_1 
++ %
+\left ( - \dot \eta_t \betatogamma_t + \frac{\sigma_t^2}{2\betatogamma_t} \right )
+\xi \\
+& \overset{(*)}{=} \dot \alpha_t X_1 +  \dot \betatogamma_t \xi \\
+& = \dot X_t. 
+\ee 
+where in $\overset{(*)}{=}$ we used that $\eta_t = - \frac{\dot \alpha_t}{\alpha_t}$ and $ {\sigma_t^2} = 2\betatogamma_t^2  \left (\frac{\dot\alpha_t}{\alpha_t} -\frac{\dot \betatogamma_t}{\betatogamma_t} \right )$ which can be derived from \eqref{equ:alphadiff}. 
+\end{proof}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+    
+  
+
+
+
+
+
+
+

@@ -1,0 +1,161 @@
+
+
+\paragraph{Notation} 
+Let $\Cone$ be the set of continuously  differentiable functions $f\colon \RR^d\to \RR$, and $\Cc$ the functions in $\Cone$ whose support is compact. 
+For a time-dependent velocity field $v \colon \RR^d\times[0,1]\to \RR$, 
+we write $v_t(\cdot) = v(x,t)$ and 
+use $\dot v_t(x) \defeq \partial v(x,t)$ and $\dd v_t(x) \defeq \partial_x v(x,t)$ to denote the partial derivative w.r.t. time $t$ and variable $x$, respectively. 
+We denote by $C^{2,1}(\RR^d\times [0,1])$
+the set of functions $f\colon \RR^d\times [0,1]\to \RR$ that are second-order continuously differentiable w.r.t. $x$ and first-order continuously differentiable w.r.t. $t$. 
+In this work, 
+an ordinary differential equation 
+(ODE) $\d z_t = v_t(z_t) \d t$ should be interpolated as an integral equation $z_t = z_0 + \int_0^t v_t(z_t) \dt $. 
+For $x\in \RR^d$, $\norm{x}$ denotes the Euclidean norm. We always write $c^*$ as the convex conjugate of $c\colon \RR^d\to \RR$, that is, $c^*(x) = \sup_{y\in\RR^d} \{x\tt y - c(y)\}$. 
+
+Random variables are capitalized (e.g., $X,Y,Z$) to  distinguish them with deterministic values (e.g, $x,y,z$). 
+Recall that an $\RR^d$-valued random variable  
+$X=X(\omega)$ is a measurable function $X\colon \Omega \to \RR^d$, where $\Omega$ is an underlying sample space equipped with a $\sigma$-algebra $\mathcal F$ and a probability measure $\meas P$. 
+The triplet $(\Omega, \mathcal F, \meas P)$ form the underlying probability space, which is omitted in writing in the most places.  
+We use $\law(X)$ to denote the probability law of $X$, which is the probability measure $\meas L$ that satisfies $\meas L(B) = \meas P(\{\omega \colon X(\omega) \in B\})$ for all measurable sets on $\RR^d$. 
+For a functional $F(X)$ of a random variable $X$, 
+the optimization problem $\min_{X}F(X)$ %
+technically means to 
+find a measurable function $X(\omega)$ to minimize $F$, even though we omit the underlying sample space $\Omega$. When $F(X)$ depends on $X$ only through $\law(X)$, the optimization problem is equivalent to finding the optimal $\law(X)$. 
+
+
+
+
+\paragraph{Outline} The rest of the work is organized as follows. Section~\ref{sec:ot} 
+introduces the background of optimal transport. Section~\ref{sec:rectopt} 
+reviews rectified flow of \cite{rectified} from an optimization-based view. 
+Section~\ref{sec:marginal0} characterizes 
+the if and only if condition 
+for two differentiable stochastic processes to have equal marginal laws. 
+Section~\ref{sec:crectify} introduces the main $c$-rectified flow method and establishes its theoretical properties. 
+ 
+
+
+\section{Background of Optimal Transport}
+\label{sec:ot}
+This section introduces the background of optimal transport (OT), 
+including both the static and dynamic formulations.  
+Of special importance is the dynamic formulation, 
+which is closely related to the rectified flow approach. 
+The readers can find systematic introductions to OT in 
+a collection of excellent textbooks 
+\cite{villani2021topics, figalli2021invitation,   ambrosio2021lectures, peyre2019computational, ollivier2014optimal,
+santambrogio2015optimal,
+villani2009optimal}.  
+
+\paragraph{Static formulations} 
+The optimal transport problem was 
+first formulated by 
+Gaspard Monge in 1781 when he studied 
+ the problem of how to 
+ redistribute mass, e.g., a pile of soil, with minimal effort. 
+ Monge's problem can be formulated as
+ \bbb \label{equ:m}
+ \inf_{T} \e{c(T(X_0)- X_0)} ~~~~s.t.~~~~ \law(T(X_0))=\tg_1, ~~~ \law(X_0)=\tg_0,
+ \eee 
+ where we minimize the $c$-transport cost 
+ in the set of deterministic couplings $(X_0,X_1)$ that satisfy $X_1 = T(X_0)$ for a transport mapping $T\colon \RR^d\to \RR^d$. 
+The Monge–Kantorovich (MK) problem in \eqref{equ:mk} is the relaxation 
+of \eqref{equ:m} to the set of all (deterministic and stochastic) couplings of $\tgg$.  
+The two problems are equivalent when the optimum of \eqref{equ:mk} is achieved by a 
+deterministic coupling, which is guaranteed if $\tg_0$ is  an absolutely continuous measure on $\RR^d$. 
+
+A key feature of the MK problem is that it is
+a linear programming w.r.t. the law of the coupling $(X_0,X_1)$, and yields a  dual problem of form: %
+\bbb \label{equ:dmk}
+\sup_{\mu, \nu} 
+\tg_1(\mu)  - \tg_0(\nu) 
+~~s.t.~~
+ \mu(x_1) - 
+\nu(x_0)\leq c(x_1-x_0),~~~~\forall (x_0,x_1),
+\eee 
+where we write $\tg_1(\mu) \defeq \int \mu(x) \d \tg_1(x)$, and $\mu,\nu$ are optimized in all functions from $\RR^d$ to $\RR$. 
+For any coupling $(X_0,X_1)$ of $\tgg$, and $(\mu,\nu)$ satisfying the constraint in \eqref{equ:dmk}, it is easy to see that 
+\bbb \label{equ:dualderive}
+\E[c(X_1-X_0)] 
+\geq \E[\mu(X_1) - \nu(X_0)] 
+= \tg_1(\mu) - \tg_0(\nu). 
+\eee 
+As the left side of \eqref{equ:dualderive} 
+only depends on $(X_0,X_1)$ and the right side only on $(\mu,\nu)$, one can show that $(X_0,X_1)$ is $c$-optimal  and $(\mu,\nu)$ solves \eqref{equ:dmk} iff 
+$\mu(X_0) + \nu(X_1) = c(X_1-X_0)$ 
+holds with probability one, which provides a basic optimality criterion. %
+Many existing 
+OT algorithms are developed by exploiting the primal dual relation of \eqref{equ:mk} and 
+\eqref{equ:dmk} 
+(see e.g., \cite{korotin2022neural}), but have the drawback of yielding  minimax problems that are challenging to solve in practice. %
+ 
+If $c$ is strictly convex, 
+the %
+optimal transport map of \eqref{equ:m} 
+is unique (almost surely) and yields a form of 
+\bb %
+T(x)=x + \dd c^*(\dd \nu(x)), ~~~~
+\ee 
+where $c^*$ is the convex conjugate function of $c$, and $\nu$ is an optimal solution of \eqref{equ:dmk}, which is  $c$-convex in that $\nu(x) =  \sup_{y}\left \{ -c(y-x) +  \mu(y)\right \}$ with $\mu$ the associated solution. 
+In the canonical case of quadratic cost  $c(x) = \frac{1}{2}\norm{x}^2$, we can write $T(x) = \dd \phi(x)$, where $\phi(x) \defeq \frac{1}{2}\norm{x}^2 + \nu(x)$ is a convex function. 
+
+
+
+\paragraph{Dynamic  formulations} 
+Both the MK and Monge problems can be equivalently framed in dynamic ways 
+as finding continuous-time processes that transfer $\tg_0$ to $\tg_1$.  
+Let $\{x_t \colon t\in[0,1]\}$ be a smooth path connecting $x_0$ and $x_1$, whose time derivative is denoted as $\dot x_t$. 
+For convex $c$, by Jensen's inequality, we can represent the cost $c(x_1-x_0)$ in an integral form: 
+$$
+c({x_1 - x_0}) = c\left (\int_0^1 \dot x_t \dt \right) =  \inf_{x} \int_0^1 c({\dot x_t}) \dt,
+$$
+where the infimum is attained when $x_t$ is the  linear interpolation (geodesic) path:  $x_t = t x_1 + (1-t)x_0$. 
+Hence, the MK optimal transport problem \eqref{equ:mk} is equivalent to 
+\bbb \label{equ:qt}
+\inf_{\vv X}  
+\E\left  [ \int_0^1 c(\dot X_t) \dt \right ]  ~~~~~s.t.~~~~ \law(X_0) = \tg_0, ~~\law(X_1) = \tg_1,
+\eee 
+where we optimize in the set of  time-differentiable %
+stochastic processes 
+$\vv X = \{X_t \colon t\in[0,1]\}$.
+The optimum of \eqref{equ:qt} 
+is attained by  $X_t = t X_1 + (1-t)X_0$ when
+ $(X_0,X_1)$ is a $c$-optimal coupling of \eqref{equ:mk}, which is known as the \emph{displacement interpolation}  \citep{mccann1997convexity}. 
+ We call the objective function in \eqref{equ:qt} the path-wise $c$-transport cost. 
+
+The Monge problem can also be framed in a dynamic way. 
+Assume the transport map $T$ can be induced by an ODE model 
+$\d X_t = v_t(X_t)\dt $ such that $X_1 = T(X_0)$. Then the Monge problem is equivalent to %
+\bbb \label{equ:cm}
+\inf_{v,\traj X} \E\left [ \int _0^1  c({v_t(X_t)}) \dt  \right] ~~~~~s.t.~~~~~ \d X_t = v_t(X_t)\dt ,~~~~~
+\law(X_0) = \tg_0, ~~~~~ \law(X_1) = \tg_1, 
+\eee 
+which is equivalent to restricting $\vv X$  in \eqref{equ:qt} to the set of processes that can be induced by ODEs. 
+
+Assume that $X_t$ following  $\d X_t = v_t(X_t)\dt $ yields a density function $\varrho_t$. Then 
+it is well known that $\varrho_t$ satisfies the continuity equation:  %
+$$
+\dot \varrho_t + \div(v_t\varrho_t) = 0.
+$$
+Hence, we can rewrite \eqref{equ:cm} into an optimization problem on $(v, \varrho)$, yielding the celebrated \emph{{\bbformula} formula} \cite{benamou2000computational}: 
+\bbb \label{equ:bb} 
+\inf_{v, \varrho} 
+\int_0^1  \int c(v_t(x))  \varrho_t(x)\d x \dt  
+~~~~s.t.~~~~ 
+\dot  \varrho_t  + \div(v_t \varrho_t) = 0,~~~~\rho_0  = \d\tg_0/\dx, ~~~~\rho_1  = \d \tg_1/\dx, \eee 
+where $\d \pi_i/\d x$ denotes the density function of $\tg_i$. 
+The key idea of 
+\eqref{equ:cm} and \eqref{equ:bb} is to 
+restrict the optimization of \eqref{equ:qt} to the set of deterministic processed induced by ODEs, which significantly reduces  the search space. 
+Intuitively, 
+Jensen's inequality $\E[c(Z)]\geq c(\E[Z])$ shows that we should be able to reduce the expected cost of a stochastic process 
+by ``marginalizing'' out the  randomness. 
+In fact, 
+we will show that, for a differentiable stochastic process $\vv X$, %
+its ($c$-)rectified flow yields no larger 
+path-wise $c$-transport cost in \eqref{equ:qt} than $\vv X$ (see Lemma~\ref{thm:rectdual} and Theorem~\ref{thm:optmultimarg}).  
+
+However, all the dynamic formulations above are still highly challenging to solve in practice.  
+We will show that $c$-rectified flow can be viewed as a special coordinate descent like  approach 
+to solving \eqref{equ:qt} (Section~\ref{sec:crectifyOptView}). %
+

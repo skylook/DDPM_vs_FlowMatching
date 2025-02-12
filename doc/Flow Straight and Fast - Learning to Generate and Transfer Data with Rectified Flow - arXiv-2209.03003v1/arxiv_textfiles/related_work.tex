@@ -1,0 +1,282 @@
+\section{Related Works and Discussion}
+
+\paragraph{Learning one-step models}
+GANs \citep{goodfellow2014generative, arjovsky2017wasserstein, liu2021fusedream}, VAEs \citep{kingma2013auto}, and (discrete-time) normalizing flows  \citep{rezende2015variational, dinh2014nice,dinh2016density}
+have been three classical approaches for learning deep generative models. %
+GANs have been most successful in terms of  generation qualities (for images in particular), but suffer from the notorious training instability and mode collapse issues due to use of minimax updates. 
+  VAEs and normalizing flows are both trained based on the principle of maximum likelihood estimation (MLE) and  need to introduce constraints on the model architecture and/or special approximation techniques to ensure tractable likelihood computation: 
+  VAEs typically use a conditional Gaussian distribution in addition to the variational approximation of the likelihood; 
+  normalizing flows require to use specially designed invertible architectures and need to copy with calculating expensive Jacobian matrices.   
+ 
+ The reflow+distillation approach in this work provides another promising approach to  training one-step models,  avoiding the minimax issues of GANs and the intractability issues of the likelihood-based methods. 
+
+\paragraph{Learning ODEs: MLE and PF-ODEs} %
+There are two major approaches for learning neural ODEs: 
+the PF-ODEs/DDIM approach discussed in Section~\ref{sec:nonlinear}, and the more classical MLE based approach
+ of \cite{chen2018neural}. 
+
+\emph{$\bullet$~The MLE approach.}  
+In \cite{chen2018neural}, 
+neural ODEs are trained 
+for learning generative models by maximizing the likelihood of the distribution of the ODE outcome $Z_1$ at time $t=1$ under the data distribution $\tg_1$. Specifically, 
+with observations from $\tg_1$, it estimates a neural drift $v$ of an ODE  $\d Z_t = v(Z_t,t)\dt $ by 
+\bbb \label{equ:neuralode}
+\max_{v}  \mathbb{D}(\tg_1;~~\rho^{v,\tg_0}), 
+\eee 
+where $\mathbb{D}(\cdot;~\cdot)$ denotes 
+KL divergence (or other discrepancy measures),  and $\rho^{v,\tg_0}$ is the density of $Z_1$ following $\d Z_t = v(Z_t,t)\dt $ from $Z_0\sim \tg_0$; the density of $\tg_0$ should be known and tractable to calculate. 
+
+By using  
+an instantaneous change of variables formula, 
+it was observed in \cite{chen2018neural} that the likelihood of neural ODEs
+are easier to compute than the discrete-time normalizing flow without constraints on the model structures. 
+However, this MLE approach is still computationally expensive for large scale models as it requires repeated simulation of the ODE during each training step.
+In addition, 
+as the optimization procedure of MLE requires to  backpropagate through time,
+it can easily suffer the gradient vanishing/exploding problem unless proper regularization is added. 
+
+Another fundamental problem is that 
+the MLE \eqref{equ:neuralode}  of neural ODEs is theoretically under-specified, 
+because MLE only concerns matching the law of the final outcome $Z_1$ with the data distribution $\tg_1$, and  there are infinitely many ODEs to achieve the same output law of $Z_1$ while traveling through different paths. 
+A number of works have been proposed to remedy  this by adding 
+regularization terms, such as these based on transport costs, to favor shorter paths; see  \cite[][]{nichol2021improved, onken2021ot}. 
+With a regularization term, the ODE learned by MLE would be implicitly determined by the initialization and other hyper-parameters of the optimizer used to solve \eqref{equ:neuralode}.  
+
+\emph{$\bullet$~Probability Flow ODEs.}  
+The method of PF-ODEs \cite{song2020score} and DDIM \cite{song2020denoising} provides a different approach to learning ODEs that avoids the main disadvantages of the MLE approach, including %
+the expensive likelihood calculation, training-time simulation of the ODE models, and the need of backpropagation through time.  %
+However,
+because PF-ODEs and DDIM 
+were derived as the side product of learning the mathematically more involved diffusion/SDE models, 
+their theories and algorithm forms were made 
+unnecessarily restrictive and complicated. 
+The nonlinear rectified flow framework shows that the 
+learning of ODEs 
+can be approached directly in a very simple way, allowing us to identify the canonical case of linear rectified flow  and open the door of further improvements with flexible and decoupled choices of the interpolation curves $X_t$ and initial distributions $\tg_0.$ 
+
+
+ Viewed through the general non-linear rectified flow  framework, 
+ the computational and theoretical drawbacks of MLE can be avoided because 
+we can simply pre-determines the ``roads'' 
+that the ODEs should travel through 
+by specifying the interpolation curve $X_t$,  
+rather than leaving it for the algorithm to figure out implicitly.  
+It is theoretically valid to pre-specify any interpolation  $X_t$ 
+because the neural ODE is highly over-parameterized as a generative model: when $v$ is a universal approximator and $\tg_0$ is absolutely continuous, 
+the distribution of $Z_1$ can  approximate any distribution given any fixed interpolation curve $X_t$. The idea of rectified flow is to the 
+simplest geodesic paths for $X_t$. %
+ 
+
+
+
+
+
+
+\paragraph{Learning SDEs with denoising diffusion} 
+Although the scope of this work 
+is limited to learning ODEs, the  score-based generative models \citep{song2019generative, song2020improved, song2020score, song2021maximum}
+and denoising diffusion probability models (DDPM) \citep{ho2020denoising} 
+are of high relevance 
+as the basis of PF-ODEs and DDIM. 
+The diffusion/SDE models trained with these methods have been found outperforming GANs in image synthesis 
+in both quality and diversity \cite{dhariwal2021diffusion}. 
+Notably,  
+thanks to the stable and scalable optimization-based training procedure, 
+the diffusion models have successfully used in  huge text-to-image  generation models with astonishing results 
+\citep[e.g.,][]{glide, dalle2, imagegen}.  
+It has been quickly popularized in other domains, such as
+video \citep[e.g.,][]{ho2022video, yang2022diffusion, harvey2022flexible}, 
+music \citep{mittal2021symbolic}, audio \citep[e.g.,][]{kong2020diffwave, lee2021nu, popov2021grad}, and text \citep{li2022diffusion, wang2022language}, 
+and more tasks such as image editing  \citep{zhao2022egsde, meng2021sdedit}. 
+A growing literature has been developed for improving the inference speed of denoising diffusion models, 
+an example of which is 
+the PF-ODEs/DDIM approach which gains speedup by turning SDEs into ODEs. 
+We provide  below some examples of recent works,
+which is by no mean  exhaustive. 
+
+\emph{$\bullet$~Improved training and inference.} 
+A line of works focus on  improving the inference and sampling procedure of denoising diffusion models. 
+For example, 
+\cite{nichol2021improved} presents 
+a few simple modifications of DDPM to improve the likelihood, sampling speed, and generation quality. 
+\cite{elucidating}  systematic exams  the design space of diffusion generative models 
+with empirical studies and identifies a number of training and inference recipes 
+for better generative quality with fewer sampling steps. 
+\cite{zhang2022fast} proposes a diffusion exponential integrator sampler for fast sampling of diffusion models. \cite{lu2022dpm} provides a customized high order solver for PF-ODEs. 
+\citep{bao2022analytic} provides an analytic estimate of the optimal diffusion coefficient. 
+
+
+
+\emph{$\bullet$~Combination with other methods.}
+ Another direction is to speed up diffusion models by combining them with GANs and other generative models. 
+DDPM Distillation~\citep{luhman2021knowledge}
+accelerates the inference speed 
+by distilling the trajectories of a diffusion model into a series of conditional GANs. 
+The truncated diffusion probabilistic model (TDPM) of \citep{zheng2022truncated}
+trains a GAN model as $\pi_0$ so that the diffusion process can be truncated to improve the speed; 
+the similar idea was explored in \cite{lyu2022accelerating, franzese2022much}, 
+and \citep{franzese2022much} provides an analysis on the optimal truncation time.  
+\citep{sinha2021d2c, wehenkel2021diffusion, vahdat2021score} learns a denoising diffusion model in the latent spaces and combines it with variational auto-encoders. 
+These methods can be potentially applied to rectified flow to gain similar speedups for learning neural ODEs.   
+
+\emph{$\bullet$~Unpaired Image-to-Image translation.} 
+The standard denoising diffusion and PF-ODEs methods focus on the generative task of transferring a Gaussian noise ($\tg_0$) to the data ($\tg_1$). A number of works have been proposed to 
+adapt it to transferring data between arbitrary pairs of source-target domains. 
+For example, 
+SDEdit \cite{meng2021sdedit} 
+synthesizes realistic images 
+guided by an input image by 
+first adding noising to the input and then denoising the resulting image through 
+a pre-trained SDE model. 
+\cite{choi2021ilvr} proposes 
+a method to guide the generative process of DDPM to generate realistic images based on a given reference image.  
+\cite{su2022dual} leverages two 
+two PF-ODEs for image translation, 
+one translating source images to a latent variable, and the other constructing  the target images from the latent variable.  
+\cite{zhao2022egsde} proposes 
+an energy-guided approach that employs an energy function pre-trained on the source and target domains to guide the inference process of a pretrained SDE for better image translation. 
+In comparison, 
+our framework shows that domain transfer 
+can be achieved by essentially the same algorithm as generative modeling, by simply setting $\tg_0$ to be the source domain. %
+
+\emph{$\bullet$~Diffusion bridges.}
+Some recent works \cite{peluchetti2021non, bridge} show that the design space of denoising  diffusion models can be made highly  flexible with the assistant of diffusion bridge processes that are pinned to a fixed data point at the end time. This reduces the design of denoising diffusion methods to 
+constructing a proper bridge processes. 
+The bridges in 
+\citet{song2020score} are  
+constructed by a time-reversal technique, which can be equivalently achieved by Doob's $h$-transform as shown in \cite{peluchetti2021non, bridge}, 
+and more general construction techniques are discussed in \cite{bridge, geobridge}.  
+Despite the significantly extended  design spaces, an unanswered question %
+is 
+what type of diffusion bridge processes should be preferred. 
+This question is made challenging because the presence of diffusion noise and the need of advanced stochastic calculus tools  make it hard to intuit  how the methods work.
+By removing the diffusion noise, 
+our work makes it clear that straight paths should be preferred. We expect that the idea can be extended to provide guidance on designing optimal bridge processes for learning SDEs. 
+
+\emph{$\bullet$~Schrodinger bridges.} 
+Another body of works  \citep{wang2021deep, de2021diffusion, chen2021likelihood, vargas2021solving}  
+leverages  
+Schrodinger bridges (SB) as an alternative approach to learning diffusion generative models. These approaches are attractive theoretically, but casts significant  
+computational challenges for solving the Schrodinger bridge problem.    
+
+
+
+
+
+
+
+
+\paragraph{Re-thinking the role of diffusion noise}
+The introduction of diffusion noise 
+was consider essential due to the key role  
+it plays in the derivations of the successful methods \citep{song2020score, ho2020denoising}. 
+However, 
+as rectified flow 
+can achieve better or comparable results with a ODE-only framework, 
+the role of diffusion mechanisms 
+should be re-examed and clearly decoupled from the other merits of denoising diffusion models. 
+The success of  
+the denoising diffusion models may be 
+ mainly attributed to the simple and stable  optimization-based training procedure 
+that allows us to avoid the instability issues 
+and the need of case-by-case tuning of GANs, rather than the presence of diffusion noises. 
+
+
+
+Because our work shows that there is no need to invoke SDE tools if the goal is to learn ODEs,
+the remaining question is 
+whether we should learn an ODE or an SDE 
+for a given problem. 
+As already argued by a number of works 
+\citep{song2020score,song2020denoising, elucidating},  
+ODEs should be preferred over SDEs in general. 
+Below is a detailed comparison between ODEs and SDEs. 
+
+
+ $\bullet$~\emph{Conceptual simplicity and numerical speed.} %
+ SDEs are more mathematically involved and  are more difficult to understand.  Numerical simulation of ODEs are simpler and faster than SDEs. 
+
+
+$\bullet$~\emph{Time reversibility.} 
+It is equally easy to 
+solve the ODEs 
+forwardly and backwardly.  
+In comparison, the time reversal of 
+SDEs  \citep[e.g.,][]{anderson1982reverse, haussmann1986time, follmer1985entropy} 
+is more involved theoretically and may not be computationally tractable. %
+
+
+ $\bullet$~\emph{Latent spaces.} 
+ The couplings $(Z_0,Z_1)$ 
+ of ODEs are deterministic and yield low transport cost in the case of rectified flows, 
+ hence providing  a good latent space for representing and manipulating outputs. 
+ Introducing diffusion noises 
+ make $(Z_0,Z_1)$ more stochastic and hence less useful. In fact, the $(Z_0,Z_1)$ given by DDPM ~\cite{ho2020denoising} and the SDEs of \cite{song2020score} and hence useless for latent presentation. 
+
+ 
+ $\bullet$~\emph{Training difficulty.}  
+ There is no reason to believe 
+that training an ODE is harder, if not easier, 
+than training an SDE sharing the same marginal laws: the training loss of both cases would  share the distributions of covariant and differ only on the targets. In the setting of \citep{song2020score}, the two loss functions \eqref{equ:oud} and \eqref{equ:odeobjgg} are equivalent upto a linear reparameterization.
+
+
+$\bullet$~\emph{Expressive power.}   
+As every SDE can be converted into an ODE that has the same marginal distribution using the techniques in \cite{song2020denoising, song2020score} (see also \cite{villani2009optimal}), ODEs are as powerful as SDEs for representing marginal distributions,
+which is what needed for the transport mapping problems considered in this work. 
+On the other hand, SDEs may be preferred if we need to capture richer time-correlation structures. 
+
+ $\bullet$~\emph{Manifold data.}
+ When equipped with neural network drifts, 
+ the outputs of ODEs tend to fall into a smooth low dimensional manifold,  a key inductive for 
+  structured data in AI such as images and text. %
+ In comparison, 
+ when using SDEs to model manifold data,
+ one has to carefully anneal the diffusion noise 
+ to obtain smooth outcomes, which  causes slow computation and a burden of hyperparameter tuning. 
+ SDEs might be more useful in 
+ for modeling highly noisy data in areas like finance and economics, and in 
+areas  that involve diffusion processes physically, such as molecule simulation. 
+
+ 
+
+
+
+\paragraph{Optimal vs. straight transport}
+Optimal transport has been extensively explored in machine learning 
+as a powerful way to 
+ compare and transfer between probability measures. 
+ For the transport mapping problem considered in this work,
+ a natural approach is to finding the optimal coupling $(Z_0,Z_1)$ that minimizes a transport cost $\E[c(Z_1-Z_0)]$ for a given $c$. 
+ The most common choice of $c$ is the quadratic cost $c(\cdot) = \norm{\cdot}^2$. 
+ 
+ However, 
+ finding the optimal couplings, 
+ especially for high dimensional continuous measures, is highly challenging computationally and is the subject of active research; 
+ see for example \citep{seguy2017large, korotin2021neural, korotin2022neural, makkuva2020optimal, rout2021generative, daniels2021score}.    
+ In addition, 
+although the optimal couplings 
+are known to have nice smoothness and other regularity properties, 
+it is not necessary to accurately find the optimal coupling because the transport cost
+do not exactly align with
+the learning  performance of individual problems; see e.g., \cite{korotin2021neural}.  %
+ 
+ 
+ 
+ 
+ In comparison, 
+ our reflow procedure 
+ finds a straight coupling, 
+ which is not optimal w.r.t. a given $c$ (see Section~\ref{sec:stcouplings}).  
+ From the perspective of fast inference, 
+ all straight couplings are equally good because they all yield straight rectified flows and hence can be simulated with one Euler step. 
+ 
+ 
+
+
+
+
+
+
+
+ 
+ 

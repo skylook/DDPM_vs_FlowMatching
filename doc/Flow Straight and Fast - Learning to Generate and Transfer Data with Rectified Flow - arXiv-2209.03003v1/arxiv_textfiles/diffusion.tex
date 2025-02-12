@@ -1,0 +1,595 @@
+
+\section{Connection to Diffusion Models} 
+\label{sec:diffusion} 
+
+\subsection{Diffusion Models via Smooth Bridges}
+As shown in Section~\ref{sec:marginal}, 
+a marginal preserving flow $Z_t$ can be induced from any smooth bridge $X_t$ connecting $\tg_0$ and $\tg_1$. 
+By further converting the flow into a diffusion process in a marginal preserving way, we obtain a general  and simple procedure for deriving diffusion models that recovers a large number of existing works. Our procedure highlights the fact that the bridge process $X_t$ (which itself is smooth) and the choice of diffusion coefficient of the learned model can be decoupled as two orthogonal design choices.  
+
+We leverage the following result that has been well exploited the in the literature. 
+
+\begin{pro}
+Assume the conditions in Theorem~\ref{thm:marginal}. 
+In addition, let $p_{X_t}(z)$ be the shared density function 
+of $X_t$ and $Z_t$, which we assume to be 
+continuously differentiable and positive everywhere on $\RR^d$. 
+Assume $\{U_t\}$ solves the following  stochastic differential equation: %
+\bbb\label{equ:Udiff}
+\d  U_t = v^{\X,\sigma}(U_t, t)\dt  + \sigma_t \d W_t, && U_0 \sim \tg_0 && \text{with} && 
+v^{\X,\sigma}(z,t)= v^\X(z,t) + \frac{\sigma_t^2}{2} \dd \log p_{X_t}(z), 
+\eee  
+where $\sigma_t \in \RR$ is a positive sequence and $W_t$ is a standard Brownian motion. 
+Then  $U_t$ shares the same marginal laws with $Z_t$ (and $X_t$) for all time $t$, that is, $\law(U_t) = \law(Z_t) = \law(X_t)$, $\forall t\in[0,1]$. 
+\end{pro}
+
+Therefore, the diffusion process $U_t$ also provides a draw from $U_1\sim \tg_1$ from the target distribution, 
+although the resulting coupling $(U_0,U_1)$ is different from $(Z_0,Z_1)$, 
+and no longer guarantees to yield lower convex transport costs than $(X_0,X_1)$ %
+due to the introduction of the diffusion noise. 
+
+In the following, we discuss two approaches to estimate $v^{\X,\sigma}$: 
+one based on modifying the loss function in \eqref{equ:Lgvphi} which recovers the (continuous limit of) training receipts \red{in \cite{song2020denoising, ho2020denoising}}; 
+another constructs $v^{\X,\sigma}$ directly from estimates of $v^\X$ without retraining. 
+
+\subsubsection{Training Diffusion Models via Smooth Bridges}
+
+To construct a mean square style  loss function for $v^{\X, \sigma}$, we need to express $\dd \log p_t(x)$ into a conditional expectation of something that can be empirically calculated based on draws of $X_t$. 
+This is made possible with the following well known relation (see Lemma~\ref{lem:xydlogp} in \red{Appendix}): 
+$$
+\dd_x \log p_{X_t}(x) =\E[ \dd_x \log p_{X_t|C_t}(x~|~C_t) ~|~ X_t= x],~~~~~\forall x \in \RR^d,
+$$ 
+where $C_t$ is any random variable on the same probability space for which the conditioned density function $p_{X_t|C_t}$ and its score function $ \dd_x \log p_{X_t|C_t}$ 
+exists.  
+In practice, we may choose $C_t = (X_0,X_1)$, or $C_t = X_1$ if $X_0$ has an known elementary distribution that can be explicitly marginalized. 
+It is preferred to choose a small $C_t$ since resulting estimator would yield a smaller variance. %
+
+Hence, $v^{\X,\sigma}$ can be expressed into the solution of 
+\bbb \label{equ:vctxx} 
+\min_{v} \int_0^1 w_t \E\left [ \norm{v(X_t, t) - Y_t}^2_2 \right] \dt, &&
+Y_t = \ddtdot X_t + \frac{\sigma_t^2}{2} \dd \log p_{{X_t|C_t}}(X_t~|~C_t), 
+\eee
+and $v^{\X, \sigma}(x, t) = \E[Y_t~|~X_t = x]$, 
+where $w_t>0$ is a positive sequence. 
+
+
+  
+
+The procedure above provides a  general procedure to constructing denoising diffusion models. 
+It allows us to specify the methods via two orthogonal components: 
+
+1) the interpolation curve $X_t$ which serves to specify the sequence $\{\pi_t\}$ of marginal distributions that connect the source $\tg_0$ and target $\tg_1$. 
+
+2) The diffusion coefficient $\sigma_t$ specifying how random we want during the inference time. 
+
+\paragraph{A Recipe 
+for Diffusion Models with Gaussian Noise} 
+A canonical case of \eqref{equ:vctxx}, 
+which covers a number of existing  diffusion models, 
+is when 
+$X_t$ can be represented into a sum of a random variable with a Gaussian noise. 
+Specifically, assume $X_t$ is chosen to have a form of $X_t = \phi_t + \gamma_t \xi$, 
+where $\phi_t, \gamma_t$ are differentiable (random) curves  and $\xi \sim \normal(0,I)$ is a standard Gaussian noise that is independent with $C_t \defeq (\phi_t,\gamma_t)$. Then, we have $X_t ~|~ C_t \sim \normal(\phi_t, \gamma_t^2I),$ and hence 
+$\dd \log p_{X_t|C_t}(X_t ~|~ C_t) = 
+ \gamma_t^{-2}(\phi_t- X_t) = -\gamma_t^{-1} \xi. 
+$ 
+Following~\ref{equ:vctxx}, this yields 
+\bbb \label{equ:ddgauss} 
+X_t = \phi_t + \gamma_t \xi, &&
+Y_t = \dot \phi_t + \left( \dot \gamma_t  - \frac{\sigma_t^2 }{2\gamma_t} \right) \xi. 
+\eee  
+Similar procedures can be derived 
+ when $\xi$ follows a general distribution with a known density function. 
+
+
+ 
+\paragraph{Example: SMLD and DDPM}
+The instances of diffusion models in \cite{song2020denoising}, including 
+SMLD and DDPM,  can be recovered  using the following choices of $\{X_t\}$ and $\sigma_t$: 
+\bb 
+X_t = \alpha_t X_1 + \gamma_t \xi, && 
+Y_t = \dot \alpha_t X_1 + \left (\dot \gamma_t - \frac{1}{2} \frac{\sigma_t^2}{\gamma_t}\right)  \xi, && 
+ {\sigma_t^2} = 2\gamma_t^2  \left (\frac{\dot\alpha_t}{\alpha_t} -\frac{\dot \gamma_t}{\gamma_t} \right ),
+\ee 
+with $\alpha_t = 1$ for SMLD and $\alpha_t = \sqrt{1-\gamma_t^2}$ for DDPM. 
+Note that diffusion coefficient $\sigma_t$
+is determined 
+by $\alpha_t$ and $\gamma_t$ through the formula, which is a consequence of using O-U process. %
+Using the formula in \eqref{equ:ddgauss}, the target $Y_t$ in the loss function is 
+$Y_t = \dot \alpha_t X_1 + \left (\dot \gamma_t - \frac{1}{2} \frac{\sigma_t^2}{\gamma_t}\right)  \xi_t,$ which we show is equivalent to these used in DDPM and SMLD; see appendix for the derivation.  
+In this case, the initial $X_0$ is defined implicitly, $X_0 = \alpha_0 X_1 + \gamma_0 \xi $, which depends on the final value $X_1$ unless $\alpha_0 = 0$. 
+Both SMLD and DDPM assumed that $\alpha_0 /\gamma_0 \approx 0$, so that $X_0$ approximately follows $\normal(0, \gamma_0^2)$, which is set to the source distribution $\tg_0$. 
+
+Further, when $X_t = \alpha_t X_1 + \gamma_t \xi$, we must have 
+$X_1 = \alpha_1 X_1 + \gamma_1 \xi$, and hence $
+\alpha_t = 1$
+ and $\gamma_1 = 0$. 
+
+
+ \paragraph{Example: Brownian Bridge.} 
+If we take $
+ X_t = t X_1 + (1-t) X_0 +  \sigma_t \sqrt{t (1-t)} \xi, 
+ $
+ where $\xi\sim \normal(0,I)$ 
+ and $\sigma_t >0$. 
+ It can be shown that $\law(X_t)$ coincides with the marginal law of the Brownian bridge $\d U_t = \frac{X_1-U_t}{1-t} \dt + \sigma_t \d W_t$ with $U_0 = X_0$, which is used to construct diffusion models in \red{\citet{bridge}}.  
+ We show in Appendix that the $Y_t$ in 
+ \eqref{equ:ddgauss} can be reduced to $Y_t = \frac{X_1 - X_t}{1-t}$ (by canceling out $\xi$), 
+ which coincides with the velocity field of Brownian bridge $U_t$. 
+ 
+\paragraph{Issue of Variance Exploding} 
+Compared with {\name} flow, the training method \red{above} 
+has an extra term $\frac{\sigma_t^2}{\gamma_t}$, 
+because $\gamma_t$ must go to zero as $t\to 1$,
+this term would cause exploding problem unless $\sigma_t$ also decays to zero. 
+In fact, the choice of SMLD/DDPM has 
+$$
+\frac{\sigma_t^2}{2\gamma_t} = \gamma_t \left (\frac{\dot \alpha_t}{\alpha_t} - \frac{\dot \gamma_t}{\gamma_t} \right ). $$
+Hence $Y_t = \dot \alpha_t X_1 + \left (2\dot \gamma_t - \gamma_t \frac{\dot \alpha_t}{\alpha_t} \right ) \xi$, which does not seem to explode??? %
+
+However, a typical choice of $w_t$ as suggested by maximum likelihood estimator is $w_t = \sigma_t^{-2}$, which would explode when $\sigma_t \to 0$ as $t\to 1$. 
+
+The balanced choice of $\gamma_t, \sigma_t, w_t$ has been a subject of a number of recent works from both theoretical and empirical angles \red{[cite: Jun Zhu paper, Nvidia paper, etc]}
+
+
+\subsection{Training-free Conversion between Flow and Diffusion Models} 
+
+Another special property of $X_t$ of form $X_t = \alpha_t X_1 + \gamma_t \xi$ with $\xi \sim \normal(0,I)$ is that the velocity field $v_\sigma^*(x,t)$ 
+with any diffusion coefficient $\sigma_t$ can be readily determined from the flow velocity field, without requiring to re-train the model. 
+This approach was used in DDIM \red{[]} and  \red{song, sde} to convert a diffusion model to flow (although training with the right target may yield better results). Our derivation suggests that this seems to be a special property of  $X_t = \alpha_t X_1 + \gamma_t \xi$ with Gaussian $\xi$. 
+
+
+\begin{pro}
+Assume $X_t = \alpha_t X_1 + \gamma_t \xi$, where $\alpha_t, \gamma_t \neq 0$ and $\xi \sim \normal(0, I), X_1 \sim \tg_1$. 
+For any $\sigma_t >0$ and $v_\sigma^*(x,t)$ in \eqref{equ:Udiff} with $v^*(x,t) = v_0^*(x,t) =  \E[\dot X_t |X_t= x]$,  we have 
+$$
+v_{\sigma}^*(x,t) = v^*(x,t) + 
+\frac{\sigma_t^2}{2\gamma_t^2} \left ( 
+a_t v^*(x,t)  - (1+ b_t) x)
+\right )
+$$
+where 
+$a_t = \left(\frac{\dot \alpha_t}{\alpha_t} -  \frac{\dot \gamma_t}{\gamma_t} \right )^{-1}$, and 
+$b_t =   a_t \frac{\dot \gamma_t}{\gamma_t},$ provided that $a_t, b_t$ are finite $\forall t\in (0,1)$.   
+\end{pro}
+Note that $c_t = \gamma_t^2$ when we take $\sigma_t^2 = 2 \gamma_t^2 \left(\frac{\dot \alpha_t}{\alpha_t} -  \frac{\dot \gamma_t}{\gamma_t} \right )$ as the case of SMLD and DDPM. 
+
+Hence, if we already have trained a model $\hat v \approx v^*$ for the flow. 
+Could we directly  construct a diffusion model directly from $\hat v_\sigma = a_t \hat v - b_tx$ for any $\sigma_t$ without retraining. 
+
+\paragraph{Example: Rectified flow to Diffusion} 
+Assume $X_t = t X_1 + (1-t)X_0$, and $X_0 \sim \normal(0,  \beta_0^2I).$   Then we have $\alpha_t = t$ and $\gamma_t = \beta_0 (1-t)$, and hence 
+\bb  
+a_t = \frac{1}{2}\left ( \frac{1}{t} + 
+\frac{1}{1-t}\right )^{-1} = \frac{1}{2} {t(1-t)}, &&
+b_t =  -\frac{1}{2} {t(1-t)} \frac{1}{1-t} = 
+-\frac{1}{2} t. 
+\ee 
+Hence 
+$$
+v_\sigma^*(x,t) =
+v^*(x,t) + 
+\frac{\sigma_t^2}{2 \beta_0^2(1-t)^2}  
+\left ( \frac{t(1-t)}{2} v^*(x,t) - \frac{2-t}{2} x \right ).
+$$
+If we follow the choice of $\sigma_t^2$ in DDPM/SMLD, 
+we have $\sigma_t^2 = 2\beta_0^2\frac{1-t}{t}$. 
+
+But maybe we should take $\sigma_t^2 = \beta_0^2 (1-t)^2$ instead... 
+
+\begin{proof} 
+Assume $X_t = \alpha_t X_1 + \gamma_t \xi$. In this case, $p_t(x) \propto \E_{X_1}\left [ \exp \left (-\frac{\norm{X_t - \alpha_t X_1}^2}{2\gamma_t^2} \right )~|~ X_t =x \right ]$, and 
+$$
+\dd \log p_t(x) =  \frac{1}{\gamma_t^2} \E[\alpha_t X_1 - X_t | X_t = x] = 
+\frac{1}{\gamma_t^2}(\alpha_t \E[X_1|X_t=x] - x). 
+$$
+On the other hand, 
+\bb 
+v^*(x,t) 
+& = \E[\dot \alpha_t X_1 + \dot \gamma_t \xi ~|~ X_t = x] \\ 
+& =  \E\left [\dot \alpha_t X_1 +
+\frac{\dot \gamma_t}{\gamma_t} (X_t - \alpha_t X_1 ) ~|~ X_t = x \right ]  \\
+& = 
+\left(\dot \alpha_t -  \alpha_t \frac{\dot \gamma_t}{\gamma_t} \right ) \E[X_1|X_t =x]  + \frac{\dot \gamma_t}{\gamma_t} x
+\ee 
+Hence 
+$$
+\dd \log p_t(x) = \frac{1}{\gamma_t^2} \E[\alpha_t X_1 - X_t | X_t = x] =
+\frac{1}{\gamma_t^2} 
+\left(\frac{\dot \alpha_t}{\alpha_t} -  \frac{\dot \gamma_t}{\gamma_t} \right )^{-1} \left ( v^*(x,t) -   \frac{\dot \gamma_t}{\gamma_t} x 
+\right ) - \frac{1}{\gamma_t^2} x. 
+$$
+Hence 
+\bb 
+v_\sigma^*(x,t) 
+& = v^*(x,t) + 
+\frac{\sigma_t^2}{2\gamma_t^2}\left(\frac{\dot \alpha_t}{\alpha_t} -  \frac{\dot \gamma_t}{\gamma_t} \right )^{-1} \left ( v^*(x,t) -  \frac{\dot \gamma_t}{\gamma_t} x 
+\right ) - \frac{\sigma_t^2}{2\gamma_t^2} x \\ 
+& =  a_t v^*(x,t) - b_t x, 
+\ee 
+where 
+\bb 
+a_t = 1 + \frac{\sigma_t^2}{2\gamma_t^2}\left(\frac{\dot \alpha_t}{\alpha_t} -  \frac{\dot \gamma_t}{\gamma_t} \right )^{-1} , 
+&&
+b_t =   \frac{\sigma_t^2}{2\gamma_t^2} + \frac{\sigma_t^2}{2\gamma_t^2}\left(\frac{\dot \alpha_t}{\alpha_t} -  \frac{\dot \gamma_t}{\gamma_t} \right )^{-1} \frac{\dot \gamma_t}{\gamma_t}
+\ee 
+Note that if we take $\sigma_t^2 = 2 \gamma_t^2\left(\frac{\dot \alpha_t}{\alpha_t} -  \frac{\dot \gamma_t}{\gamma_t} \right )$ as SMLD and DDPM, %
+we have 
+\bb 
+a_t = 2, %
+&&
+b_t =  \frac{\sigma_t^2}{2\gamma_t^2}  + \frac{\dot \gamma_t}{\gamma_t} = \frac{\dot \alpha_t}{\alpha_t}. 
+\ee
+\end{proof} 
+
+\subsection{Why Should we use Diffusion Noise?} 
+
+\section{Generalization to Diffusion Models}
+
+\trash{Question: what is the benefit of diffusion? Or is it not useful at all?}
+
+Further generalization of our  approach to allow $X_t$ to be a random, non-smooth curve that connect $X_0$ with $X_1$ (called bridge processes), 
+such a framework is considered in \red{[], [].}
+
+Our earlier result can be viewed as a special case. 
+
+In particular, 
+assume $X_t$ is a stochastic  process that satisfies $\d X_t = b(X_t, t) \dt + \sigma_t(X_t,t) \d W_t$ that satisfies $X_0 \sim \tg_0$ and $X_1 \sim \tg_1$. 
+We call it a stochastic bridge. 
+
+\begin{pro}
+Assume $\d X_t = b(X,t) \dt  + \sigma(X, t) \d W_t$. Then the following SDE shares the same marginal distribution: 
+\bbb \label{equ:zdiffusion}
+\d Z_t = \bar v(X_t, t) \dt + \bar \sigma (X_t, t) \d W_t,
+\eee 
+where 
+\bbb \label{equ:condivb}
+\bar v(x,t) = \E[b(X,t)~|~X_t = x],
+&& 
+\bar \sigma^2(x,t) = \E[\sigma^2(X,t)~|~X_t = x],
+\eee 
+where $\sigma^2 = \sigma\sigma\tt$ if $\sigma$ is matrix.
+Assume $Z_t$ is the unique solution of \eqref{equ:zdiffusion} and $\law(Z_0) = \law(X_0)$. 
+Then $\law(Z_t) = \law(Z_t)$ for every $t \geq 0$. 
+\end{pro}
+\begin{proof}
+Let $h$ be a compactly supported continuously differentiable test function, we have by Ito's lemma: 
+\bb 
+\ddt  \E[h(X_t)] 
+& = \E\left [\dd h(X_t) \tt b(X,t)  + \frac{1}{2} \trace(\dd ^2 h(X_t) \sigma^2(X,t)) \right ] \\
+& = \E \left [ \dd h(X_t) \bar b(X_t,t) + \frac{1}{2} \trace(\dd^2 h(X_t) \bar \sigma^2(X_t,t) ) \right ] \ant{following \eqref{equ:condivb}}. 
+\ee 
+This suggests the marginal distribution $\pi_t$ of $X_t$ follows the Fokker Planck (FP) equation in the distributional \red{weak?} sense: 
+$$
+\ddtdot \pi_t + \div(\bar v_t \pi_t )  - \frac{1}{2} \Delta \pi_t = 0. 
+$$
+But the marginal distribution of $Z_t$ follows the same FP equation with the same initialization.  The result then follows the uniqueness of the solution. 
+\end{proof}
+
+\paragraph{A Practical Recipe for Diffusion Models}
+A key challenge in designing such algorithms is to specify bridge processes that satisfy the end point conditions. 
+\red{[]} introduced several methods to achieve this. 
+It is mainly based on specifying the SDE, and then derive the solution. Here we directly specify the solution. 
+Let $X_t$ has a form of 
+$$
+X_t = \phi(X_1, X_0,t) + \gamma_t \xi_t,
+$$
+where $\xi_t \sim \normal(0,I_d)$  and $\gamma_t$ is a sequence that satisfies $\gamma_t \geq 0$ and $\gamma_1 = 0$, and $\phi(X_1,X_0, 1) = X_1$.  
+We do not necessarily require that $\gamma_0 = 0$, and $\phi(X_1,X_0,0)=X_0$.   
+So $Z_t$ is any sequence of random variables that satisfies $Z_1 = X_1$. 
+
+In addition, we specify a sequence $\sigma_t\geq0$ which is the diffusion coefficient of the learned model. The learned generative process is then 
+\bb 
+\d Z_t = f(Z_t, t) \dt + \sigma_t \d W_t,
+&& Z_0 \sim \phi(X_1, X_0,0) +  \gamma_0 \xi_0,
+\ee 
+and the loss function is 
+\bbb \label{equ:diffloss}
+\min_{v} \int_0^1 \E [w_t \norm{v(Z_t, t) - Y_t}_2^2 ],
+\eee 
+where $Y_t = \partial_t \phi(X_1,X_0, t) - \frac{\sigma_t^2}{2 \gamma_t} \xi_t,$
+ and $w_t$ is a set of positive weights as used in typical denoising diffusion models. 
+
+\begin{thm}
+Assume $X_t = \phi(X_0,X_1,t) + \gamma_t \xi_t$, $t\in[0,1]$,  where $\phi_t$ and $\gamma_t$ are a continuously differentiable process and $\gamma_t\geq0$, and 
+$\xi_t$ is any stochastic process that satisfies $\law(\xi_t)=\normal(0,I),~\forall t$. 
+Assume $Z_t$ is the unique solution of $\d Z_t = v^*(Z_t,t) \dt + \sigma_t \d W_t$, where 
+$v^*(z,t) = \E[ \partial_t \phi(X_0,X_1, t) +  (\dot \gamma_t - \frac{1}{2}\frac{\sigma_t^2}{\gamma_t} )\xi_t ~|~ X_t = x]$, and 
+$W_t$ is a standard Brownian motion, and $\sigma_t\geq0$. 
+Then $\law(Z_t) = \law (X_t)$ for $ \forall t\in[0,1]$.  
+\end{thm}
+
+Note that when setting $\sigma_t =0$, it is a straightforward generalization of the deterministic version when $X_t = \phi(X_1,X_0,t)$. The KL divergence minimization advises that we should take $w_t = \sigma_t^2$. But alternative choices can also be good. In particular, one choice is variance balance one that takes $w_t = 1/\var(Y_t)^2$. 
+
+
+
+So we can see that the introduction of $\xi_t$ allows us to allocate part of randomness to the process, rather than pushing all randomness to the initialization. 
+
+we just need to find an oracle diffusion process whose marginals match that of $Z_t$, and then construct a loss function to approximate it. 
+
+
+
+ \paragraph{Example: Brownian Bridge.} 
+If we take $
+ X_t = t X_1 + (1-t) X_0 +  \sigma_t \sqrt{t (1-t)} \xi_t, 
+ $
+ where $\sigma_t >0$. It can be shown that there exists a stochastic process $\xi_t$ with $\law(\xi_t) = \normal(0,I)$, such that $X_t$ is the solution of $\d X_t = \frac{X_1-X_t}{1-t} \dt + \sigma_t \d W_t$, which is the Brownian bridge (when $\sigma_t=1$); see \red{\citet{bridge}}. 
+  It can be shown that in this case $\vofX(x,t) = 
+  \E[Y_t~|~X_t = x] = \E[\frac{X_1 - X_t}{1-t} ~|~ X_t=x]$.  
+
+ 
+\paragraph{Example: SMLD and DDPM}
+SMLD and DDPM can be viewed as taking $X_t = \alpha_t X_1 + \gamma_t \xi_t$ with $\alpha_t = 1$ for SMLD and $\alpha_t = \sqrt{1-\gamma_t^2}$ for DDPM, and setting the diffusion coefficient to be  $ {\sigma_t^2} = 2\gamma_t^2  (\frac{\dot\alpha_t}{\alpha_t} -\frac{\dot \gamma_t}{\gamma_t})$ (which means that $\alpha_t,\gamma_t$ should be constructed to satisfy  $\frac{\dot\alpha_t}{\alpha_t} -\frac{\dot \gamma_t}{\gamma_t}\geq 0$). 
+Using our formula, the target $Y_t$ in the loss function should be 
+$Y_t = \dot \alpha_t X_1 + \left (\dot \gamma_t - \frac{1}{2} \frac{\sigma_t^2}{\gamma_t}\right)  \xi_t.$ 
+See appendix for the derivation. 
+
+We should note that in both SMLD and DDPM, 
+the $X_0$ only follows the assumed $\tg_0$ approximately.  
+In SMLD, it is assumed that $X_t = X_1 + \gamma_t \xi_t$ and hence $X_0 = X_1 + \gamma_0 \xi_0$, which depends on $X_1$. SMLD assumes that $\gamma_0$ is sufficiently large so that $X_0$ approximately follows $\normal(0, \sigma_0I)$. 
+In DDPM, we have $X_t =\alpha_t X_1 + \gamma_t \xi_t$, and it is assumed that $\alpha_t$ is very close to zero, so that $X_0 = \alpha_0 X_1 + \gamma_t \xi_t$ approximately follows $\normal(0, \gamma_t I)$. In the light of  our general formula, there is no reason to not set $\alpha_0=0$ to get an exact initial condition. This issue is also discussed in \red{\citet{bridge}\citet{peluchetti2021non}}. 
+
+ \subsection{The choice of $\sigma_t$ and $\gamma_t$?}
+ 
+ If $\sigma_t=0$, it reduces to \red{mixupflow} 
+ if we treat $\gamma_t \xi_t$ as a part of the random from $\tg_0$.
+ 
+ One tricky issue with introducing the diffusion 
+ noise is that 
+
+So we then have $X_t = \phi_t + \gamma_t \xi_t$, and $Y_t = \dot \phi_t + (\dot \gamma_t - \frac{1}{2}\frac{\sigma_t^2}{\gamma_t} ) \xi_t$. 
+
+Note that $\gamma_t$ has to decrease to zero when $t\to 1$, which causes the variance to explode as $t\to 1$. In addition, there is further complication  in choosing the importance weight. Using MLE, we need to choose $w_t = 1/\sigma_t^2$, this means that $\sigma_t$ decaying to zero would causes problem.  
+
+
+1) It seems that one possibility is to decay $\sigma_t$ and $\gamma_t$ together to zero, and ensure that $\dot \sigma_t$ is bounded, and use uniform weights $w_t = 1$. 
+
+
+\subsection{Proof of the Flow to Diffusion Conversion}
+Recall that the marginal law $\pi_t \defeq  \law(Z_t)=\law(X_t)$ follows $\ddtdot \pi_t + \div (\vofX_t \pi_t) = 0$. 
+
+This is equivalent to 
+$\ddtdot \pi_t + \div( (\vofX_t + \frac{1}{2 } 
+\frac{\dd(\sigma^2_t \pi_t) }{\pi_t}) \pi_t) - \frac{1}{2} \Delta (\sigma^2_t \pi_t) = 0$. 
+
+Hence the following  $
+\d Z_t = 
+\left (v^*(Z_t,t) + \frac{1}{2 } 
+\frac{\dd(\sigma^2_t(Z_t,t) \pi_t(Z_t)) }{\pi_t})  \right )\dt + \sigma_t(Z_t,t)\d W_t
+$. 
+
+In fact, 
+$\d Z_t = \left (v^*(Z_t,t) + \frac{1}{2 } 
+\frac{\dd(\sigma^2_t(Z_t,t) \pi_t(Z_t)) }{\pi_t})  \right )\dt + \sigma_t(Z_t,t)\d W_t$. 
+Hence, we want to set the target $Y_t$. 
+$$
+Y_t = \ddtdot X_t + \frac{1}{2} \sigma_t^2 \dd_{X_t} \log  \pi_t(X_t~|~ X_0,X_1). 
+$$
+
+We can take 
+$$
+Y_t = \ddtdot X_t + \frac{1}{2} \sigma_t^2 R_t, 
+$$
+where $R_t$ is any random number that satisfies $\E[R_t~
+|~X_t = x] = \dd_{x} \log \pi_t(x)$. 
+
+
+\subsection{Appendix: SMLD and DDPM}
+
+
+
+\paragraph{Connection to SMLD}  
+ SMLD \citep{song2019generative, song2020score, song2020denoising} assumes $X_t$ is a Brownian motion backward in time, that is, $X_t = \rev X_{1-t}$ and $\d \tilde X_t = \sigma_{1-t}\d W_t$. By the time reversal formula, this is equivalent to $\d X_t = \sigma_t^2 \frac{X_1 - X_t}{\gamma_t^2} \dt + \sigma_t \d W_t$, where $\gamma_{t}^2 = \int_{t}^1 \sigma_{s}^2 \d s$ and hence $\sigma_t^2 = - 2\gamma_t \dot \gamma_t$. 
+ 
+Using our approach, we note that $\d \tilde X_t = \sigma_{1-t}\d W_t$ implies that $X_t = X_1 + \gamma_t \xi_t$. %
+ Hence 
+ $$Y_t =
+ \left (\dot \gamma_t -\frac{1}{2} \frac{\sigma_t^2}{\gamma_t} \right )\xi_t = 
+ \frac{\sigma_t^2}{\gamma_t^2} (X_1- X_t), 
+ $$
+ which matches the time reversal formula. 
+ 
+\paragraph{Connection to DDPM}   
+DDPM \citep{ho2020denoising} assumes that the time-reversed process $\rev X_t = X_{1-t}$ satisfies 
+$\d \rev X_t = \eta_{1-t} \rev X_t \dt + \sigma_{1-t} \d W_t$,
+It solution is 
+\bb 
+X_t = \alpha_t X_1 +
+\gamma_t \xi_t,  && \alpha_t = \exp\left(\int_t^1 \eta_s \d s \right), && 
+\gamma_t^2 = \int_t^1 \exp\left (2\int_t^s \eta_r \d r \right)  \sigma_{s}^2 \d s.  
+\ee 
+The time-reversion formula gives 
+\bbb \label{equ:xtddpm} 
+\d X_t = \left(- \eta_{t} X_t + \sigma_t^2 
+\frac{\alpha_t X_1 - X_t }{\gamma_t^2}\right )\dt + \sigma_t \d W_t.
+\eee  
+Using our formula \red{[xxx]}, 
+the regression target should be $Y_t  = \dot \alpha_t X_1 + \left (\dot \gamma_t - \frac{1}{2} \frac{\sigma_t^2}{\gamma_t}\right)  \xi_t$. 
+To see that this is consistent with \eqref{equ:xtddpm}, note that by the definition of $\alpha_t, \gamma_t$ above, we have 
+\bb 
+\eta_t = -\frac{\dot \alpha_t}{\alpha_t}, && 
+2\gamma_t\dot \gamma_t = -\sigma_t^2 -2 \gamma_t^2 \eta_t, 
+\ee  
+or $\frac{\dot \gamma_t}{\gamma_t} =  - \frac{\sigma_t^2}{2\gamma_t^2} +  \frac{\dot\alpha_t}{\alpha_t}.$ Hence 
+\bb 
+Y_t 
+& = \dot \alpha_t X_1 + \left (\dot \gamma_t - \frac{1}{2} \frac{\sigma_t^2}{\gamma_t}\right)  \xi_t \\
+& = \dot \alpha_t X_1 + \left (\frac{\dot \gamma_t}{\gamma_t} - \frac{1}{2} \frac{\sigma_t^2}{\gamma_t^2}\right) (X_t - \alpha_t X_1) \\
+& 
+= \dot \alpha_t X_1 + \left (\frac{\dot \alpha_t}{\alpha_t} -  \frac{\sigma_t^2}{\gamma_t^2}\right) (X_t - \alpha_t X_1) \\
+& =
+ -\eta_t 
+ X_t + 
+\frac{\sigma_t^2}{\gamma_t^2}\right) (
+\alpha_t X_1 - X_t), 
+\ee 
+which reduces to \eqref{equ:xtddpm}. 
+
+
+ 
+
+ 
+
+
+\subsection{Derivation of diffusion case}
+Assume $X_t = \phi(X_1, X_0, t) + \alpha_t W_{ \beta_t} $, 
+where $W_t$ is a standard Brownian motion. 
+Note that $\d W_{\beta_t} =  \dot \beta_t^{1/2} \d \tilde W_{t}$. 
+Taking gradient: \bb 
+\ddtdot X_t 
+& = \ppt \phi(X_1, X_0, t) + \dot \alpha_t W_{\beta_t} + \alpha_t \d W_{\beta_t}  \\
+&  = \ppt \phi(X_1, X_0, t) + \dot \alpha_t W_{\beta_t} + \alpha_t \dot \beta_t^{1/2} \d W_t . 
+\ee 
+We hope that $\sigma_t = \alpha_t \dot \beta_t^{1/2},$
+and the variance of the diffusion term is 
+ $\gamma_t^2 =\alpha_t^2 \beta_t.$
+ $$
+ s_t^2 = \var(\dot \alpha_t W_{\beta_t}) 
+ = \int \dot \alpha_t 
+ $$
+ We want to represent $s_t$ using $\sigma_t$ and $\gamma_t$. 
+ 
+ \begin{lem}
+ Assume $X_t = \phi_t + \alpha_t W_{\beta_t}$, where $\phi_t, \alpha_t, \beta_t$  are $C^1$ sequences and $\alpha_t, \beta_t$ are non-negative. 
+ 
+ Then $X_t$ follows
+ \bb 
+ \d X_t 
+ & = (\dot \phi_t  + \dot \alpha_t W_{\beta_t})\dt +  \alpha_t \d W_{\beta_t} \\ 
+ & = \left (\dot \phi_t + \frac{\dot \alpha_t}{\alpha_t} \left(X_t - \phi_t\right)\right) \dt   + \alpha_t \dot \beta_t^{1/2} \d \tilde W_t,
+\ee 
+where $\tilde W_t$ is defined by $\beta_t^{1/2} \d \tilde W_t = \d W_{\beta_t}$, and it is a standard Brownian motion. 
+
+Let $\gamma_t = \alpha_t \beta_t^{1/2}$, and $\xi_t \sim \normal(0, I)$, then  $\gamma_t  \xi_t \deq \alpha_t W_{\beta_t}$, and  then $X_t = \phi_t + \gamma_t \xi_t $. 
+
+Following Lemma~\ref{lem:abc} below, the drift term $Y_t$ is 
+\bb 
+ Y_t
+& = \dot \phi_t  + \dot \alpha_t W_{\beta_t} \\ 
+& = \dot \phi_t + \frac{\dot \alpha_t }{\alpha_t } \alpha_t W_{\beta_t}  \\ 
+& = \dot \phi_t + \frac{\dot \alpha_t }{\alpha_t } \gamma_t \xi_t  \\
+&= \dot \phi_t + s_t \xi_t \\
+& = \dot \phi_t + \left (\dot \gamma_t - \frac{1}{2}\frac{\sigma_t^2}{\gamma_t}\right ) \xi_t. 
+\ee 
+ \end{lem}
+ 
+ 
+ \begin{lem}\label{lem:abc}
+ Assume 
+ \bb
+ \sigma_t^2 = \alpha_t^2 \dot \beta_t , &&
+ \gamma_t^2 = \alpha_t^2 \beta_t, &&
+ s_t^2 = \dot \alpha_t^2 \beta_t.
+ \ee 
+ Then 
+ \bb 
+ s_t = \dot \gamma_t  - \frac{1}{2} \frac{\sigma_t^2}{\gamma_t},  &&  
+ \frac{\dot \alpha_t}{\alpha_t} =\frac{s_t}{\gamma_t} = \frac{\dot \gamma_t}{\gamma_t} - \frac{1}{2} \frac{\sigma_t^2}{\gamma_t^2}. 
+ \ee 
+ \end{lem}
+ \begin{proof}
+ \bb \dot \gamma_t =  \dot \alpha_t \beta_t^{1/2} + \frac{1}{2}\alpha_t \beta_t^{-1/2} \dot \beta_t 
+ = s_t + \frac{1}{2} \frac{\sigma_t^2}{\gamma_t}.  
+ \ee 
+ \bb
+ \frac{\dot \alpha_t}{\alpha_t} =\frac{s_t}{\gamma_t} 
+ = \frac{\dot \gamma_t}{\gamma_t} - \frac{1}{2} \frac{\sigma_t^2}{\gamma_t^2}. 
+ \ee 
+ \end{proof}
+ 
+
+ \paragraph{Example: Brownian Bridge (Derivation).} 
+ Assume 
+ $$
+ X_t = t X_1 + (1-t) X_0 + \sigma_t \sqrt{t (1-t)} \xi_t,
+ $$
+ where $\sigma_t>0$. Then 
+ \bb 
+ Y_t 
+ & = (X_1 - X_0) + \left(\sigma_t \frac{1-2t}{2\sqrt{t(1-t)}} -\frac{\sigma_t}{2 \sqrt{t(1-t)}}  \right) \xi_t  \\
+ & = (X_1 - X_0) - \sigma_t \frac{\sqrt{t}}{\sqrt{1-t}} \xi_t \\
+ & = (X_1 - X_0)  -  \frac{\sqrt{t}}{\sqrt{1-t}} \frac{X_t - t X_1 - (1-t) X_0}{\sqrt{t(1-t)}} \\
+ & = (X_1 - X_0)  -  \frac{{1}}{{1-t}} ({X_t - t X_1 - (1-t) X_0}) \\
+ & = \frac{X_1 - X_t}{1-t}. 
+ \ee 
+ This matches the updates of Brownian motion. 
+ This matches the updates of Brownian motion. 
+ 
+
+\section{planer}
+
+\trash{ 
+\paragraph{Generalization: Random Hitting Time}
+Set $X_t = \Phi(X_1, X_0, t)$ and $\tau_t = \Psi(X_0, X_1, t)$, such that $\tau_0 = 0$ and $\tau_t$ is an increasing function. Then try to fit 
+
+$$
+\int_0^1 \E[ w_t \norm{ f(Z_t, \tau_t)  - \partial_t [\Phi(X_1, X_0, t); \Psi(X_0, X_1, t)]}_2^2]. 
+$$
+} 
+
+\begin{enumerate}
+    \item \textbf{Generative Models} When $\Pi_0$ is a simple distribution such as Gaussian or uniform distribution, and $\pib$ is observed through a set of data points, this yields a continuous normalizing flow generative model. 
+    
+    This is our first work, 
+    we plan to verify,
+    \begin{enumerate}
+        \item (Model) Replace diffusion model with ODE, do we observe performance drop? If not, we simplify the current framework.
+        \item (Architecture) Currently we do not focus on this.
+        \item (Initialization) Design initial transport.
+        \item (Training) Inject noise to gradient for large batch size training. %
+    \end{enumerate}
+    We should show these points from different perspective,
+    \begin{enumerate}
+        \item (Visually) 2d toys.
+        \item (Quantitatively) Image generation. As the first step, to do a quick start, we can start from provided checkpoint. 
+    \end{enumerate}
+    \item \textbf{CycleGAN, Domain Transfer} When both $\pia$ and $\pib$ are observed through empirical data, this yields a cyclgan like setting. It can potentially used for multimodal generation, such as text to image convertion. 
+    \begin{enumerate}
+        \item \red{Experiment Idea: Brainstorm} CG prefers to discuss this as a section in a main work, and then create a followup in NLP / Graphics.
+        \item text to image transfer?
+        \item Translation?
+        \item Find typical problem settings of CycleGAN?
+    \end{enumerate}    
+    \item \textbf{Improving an existing GAN model} 
+When $\Pi_0$ is the output of GAN, it allows us to refine the results of GAN using a flow model. 
+Further, we can even use this approach to jointly update GAN and the flow by updating the GAN model to amortizing the flow (using the flow direction at time zero to update $\Pi_0$
+    \begin{enumerate}
+        \item \red{Experiment Idea: Brainstorm} 
+    \end{enumerate}
+\item \textbf{Autoencoder} 
+By amorting both directions of the flow we can get a bidirectional mapping between $\pia$ and $\pib$. 
+Because ODE is deterministic, the amortizing would be efficient (amortizing diffusion models can be more challenging). 
+
+    
+    As the second work, we need to emphasize different specific points and attract readers. I feel like we can,
+    \begin{enumerate}
+        \item (Outline) 1. Propose our framework, 2. show one case, 3. leave others as discussions.
+        \item (Vision, Better Visualization) When the initial distribution is an auto-regressive model, we hope to improve VQ-GAN works. \emph{This should be the main work.}
+        \item (NLG) The experiments take fewer time. \emph{This can be a followup work.}
+        \item (Experiment Note) We can start from others' checkpoints. 
+        
+    \end{enumerate}
+\item \textbf{Optimal transport} 
+This seems to enable an approximate optimal transport without requiring matching (even though using matching can further improve the result). 
+    \begin{enumerate}
+        \item \red{Experiment Idea: Brainstorm}
+    \end{enumerate}
+\item \textbf{Neural ODE / flow } 
+This is allows us to learn flow based models without requiring Jacobian computation, or inference (which is already achieved by diffusion models in some sense though).
+    \begin{enumerate}
+        \item \red{Experiment Idea: Brainstorm}
+    \end{enumerate}
+
+\end{enumerate}
+
+ \paragraph{Ablation studies \& Questions to study}
+\begin{enumerate}
+    \item What is the effect of alpha and beta sequence? 
+    \item What is the role of variance exploding? 
+    \item What is the role of overfitting? 
+    \item How to improve batch size? 
+    \item We can generate the method to add diffusion model; what is the effect of diffusion models? Any benefit?
+    \item 
+\end{enumerate}
+
+ 

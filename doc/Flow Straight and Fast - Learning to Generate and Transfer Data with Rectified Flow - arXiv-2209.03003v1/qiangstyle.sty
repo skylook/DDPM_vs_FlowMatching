@@ -1,0 +1,609 @@
+\ProvidesPackage{qiangstyle}
+\usepackage{bm} 
+%\usepackage{fixmath}
+\usepackage{subfigure}
+%\usepackage{subcaption}
+
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+%\usepackage{arevmath}     % For math symbols
+%\usepackage[noend]{algpseudocode}
+
+
+\usepackage[font=small]{caption}
+%\usepackage[font=small,labelfont=bf]{caption}
+
+%\usepackage[linesnumbered,ruled,vlined,spanish,onelanguage]{algorithm2e}
+
+
+%\usepackage{mdframed, xcolor}
+%\usepackage{framed, color}
+%\usepackage[usenames,dvipsnames,svgnames,table]{xcolor}
+%\usepackage[sort]{natbib}
+%\usepackage[comma,authoryear]{natbib}
+%\usepackage{natbib}
+%\PassOptionsToPackage{square,numbers}{natbib}
+%\usepackage[round]{natbib}
+%\usepackage[square,numbers]{natbib}
+\usepackage{amsmath,  amsfonts, amssymb, mathtools}
+%\usepackage{pxfonts}
+%\usepackage{times}		%% native times roman fonts
+%\usepackage{parskip}		%% blank lines between paragraphs, no indent
+%\usepackage[pdftex]{graphicx}	%% include graphics, preferrably pdf
+%\usepackage[raggedright]{sidecap}
+\usepackage{wrapfig} 
+%\usepackage[pdftex, citecolor=blue]{hyperref}	%% many PDF options can be set here
+%\usepackage[colorlinks,citecolor=blue,lin  kcolor=blue]{hyperref}  % hyperlink  \url \href{}{}  \hyperref[]{}
+% \usepackage[colorlinks]{hyperref}
+%\usepackage{subfigure}
+%\usepackage{graphicx, comment}
+%\usepackage{color}
+%\usepackage{url}
+%\pdfadjustspacing=1		%% force LaTeX-like character spacing
+
+\usepackage{mwe}
+
+
+\usepackage{tikz}
+
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=magenta,
+}
+\newcommand{\myhere}[1]{\href{#1}{[Link]}}
+
+
+\usepackage{graphicx}
+
+\usepackage{xstring}
+
+%\usepackage[names,dvipsnames,named]{xcolor}
+
+%\usepackage{color}
+%\usepackage{hyperref}	%% many PDF options can be set here
+
+%\usepackage{xcolor}%[names,dvipsnames,named]
+\usepackage{colortbl}
+%\usepackage[colorlinks,linkcolor=blue]{hyperref}
+
+%\usepackage[inner, left]{showlabels}
+%\renewcommand{\showlabelfont}{\small\color{red}}
+%\showlabels[\small\color{blue}]{cite}
+%\showlabels[\small\color{red}]{bibitem}
+
+
+
+%\usepackage{MnSymbol}
+\newcommand{\eqcolon}{\mathrel{\rotatebox[units=360]{180}{\ensuremath{\coloneq}}}}
+
+%%%%%%%%%%%%%%% EXACT 1in MARGINS %%
+%\setlength{\textwidth}{6.5in}     %%
+%\setlength{\oddsidemargin}{0in}   %%
+%\setlength{\evensidemargin}{0in}  %%
+%\setlength{\textheight}{8.5in}    %%
+%\setlength{\topmargin}{0in}       %%
+%\setlength{\headheight}{0in}      %%
+%\setlength{\headsep}{0in}         %%
+%\setlength{\footskip}{.5in}       %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+\usepackage{comment}
+
+\let\proof\relax
+\let\endproof\relax
+
+
+
+
+\let\xproof\comment
+\let\endxproof\endcomment
+
+%\usepackage{amsthm}   
+\usepackage{amssymb, amsthm, amsmath}
+\usepackage{xparse}
+
+
+\newtheorem{thm}{Theorem}[section]
+\newtheorem*{thm*}{Theorem}
+\providecommand*\thmautorefname{Theorem}
+
+\newtheorem{mydef}[thm]{Definition} 
+\newtheorem{ass}[thm]{Assumption} 
+\newtheorem{exa}[thm]{Example} 
+\newtheorem{rem}[thm]{Remark}  
+
+
+%\usepackage[createShortEnv]{proof-at-the-end}
+\newcommand{\isproofhere}{normal}
+%\newcommand{\isproofhere}{no link to proof}
+
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem*{cor*}{Corollary}
+\providecommand*\corautorefname{Corollary}
+
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem*{lem*}{Lemma}
+\providecommand*\lemautorefname{Lemma}
+
+\newtheorem{pro}[thm]{Proposition}    
+\newtheorem*{pro*}{Proposition}
+\providecommand*\proautorefname{Proposition}
+
+
+
+\newcommand{\name}{{rectified}}%{{magic}}
+\newcommand{\Name}{{Rectified}}%{{Magic}}
+
+
+\newcommand{\handpoint}{\ding{43}}
+
+\usepackage{pifont}
+\newenvironment{msg} 
+{\begin{center}\it \ding{43}} 
+{\end{center}}
+
+
+\newcommand{\trash}[1]{{\red{\tiny#1}}}
+
+
+%%%%%%%%%%%%%  COMMON  %%%%%%%%%%%%
+\newcommand{\myf}[2]{\frac{\displaystyle #1}{\displaystyle #2}}
+ \newcommand{\myp}[2]{\frac{\displaystyle \partial #1}{\displaystyle \partial  #2}}
+ \newcommand{\myb}[1]{\mbox{\boldmath$#1$}}
+ \newcommand{\eqnref}[1]{Eqn.~\eqref{#1}}
+\newcommand{\figref}[1]{Fig.~\ref{#1}}
+\newcommand{\Qiang}[1]{\textcolor{red}{#1}\\}
+\newcommand{\qiang}[1]{\textcolor{red}{#1}}
+%\newcommand{\Todo}[1]{\textcolor{red}{TODO: #1}\\}
+%\newcommand{\todo}[1]{\textcolor{gray}{TODO: #1}}
+\newcommand{\red}[1]{\textcolor{red}{#1}}
+\newcommand{\med}[1]{\textcolor{magenta}{#1}}
+\newcommand{\blue}[1]{\textcolor{blue}{#1}}
+\newcommand{\gray}[1]{\textcolor{gray}{#1}}
+\newcommand{\green}[1]{\textcolor{green}{#1}}
+\newcommand{\myempty}[1]{}
+
+\newcommand{\ant}[1]{~~~~~~~\text{\med{//#1}}}
+
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\V}{\mathbf}
+\newcommand{\HH}{\mathcal{H}}
+\renewcommand{\H}{\mathcal{H}}
+\newcommand{\B}{\mathcal{B}}
+\newcommand{\D}{\mathbb{D}}
+%\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\C}{\mathcal{C}}
+\newcommand{\R}{\mathbb{R}}
+
+\newcommand{\A}{\mathbb{A}}
+
+\renewcommand{\S}{\mathbb{D}}
+
+\newcommand{\vx}{{\boldsymbol{x}}}
+\newcommand{\vv}[1]{{\boldsymbol{#1}}}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\newcommand{\RR}{\mathbb{R}}
+\newcommand{\neib}[1]{\partial{#1}}
+\newcommand{\normal}{\mathcal{N}}
+\newcommand{\var}{\mathrm{var}}
+\newcommand{\cov}{\mathrm{cov}}
+\newcommand{\KL}{\mathcal{KL}}
+
+%\newcommand{\Remark}{\paragraph{Remark}}
+
+
+\newcommand{\trace}{\mathrm{tr}}
+\newcommand{\diag}{\mathrm{diag}}
+
+
+
+\newcommand{\la}{\langle}
+\newcommand{\ra}{\rangle}
+
+%%%%%%%%%%%%%% Big O notation %%%%%%%%%%%%%%
+\newcommand{\op}{o_p}
+\newcommand{\Op}{O_p}
+
+\newcommand{\od}{o}
+\newcommand{\Od}{O}
+
+\newcommand{\stein}{{\mathcal A}}
+
+
+\newcommand{\ind}{\mathbb{I}}
+\newcommand{\sign}{\mathrm{sign}}
+
+\newcommand{\prob}{\mathrm{Pr}}
+
+\newcommand{\score}{{\vv s}}
+
+\newcommand{\sumstein}{{\mathcal T}}
+
+\newcommand{\cd}{\mid}
+
+
+\newcommand{\Kmatrix}{\vv{K}}
+
+\newcommand{\Q}{{\dist Q}}
+
+
+\newcommand{\fix}{\marginpar{FIX}}
+\newcommand{\new}{\marginpar{NEW}}
+\newcommand{\vw}{{\vv{w}}}
+
+\newcommand{\x}{x}
+\newcommand{\z}{z}
+
+\newcommand{\X}{{\vv{X}}}
+\newcommand{\T}{{\vv{T}}}
+\newcommand{\vf}{{\vv{f}}}
+\newcommand{\vg}{{\vv{g}}}
+
+\newcommand{\para}{\epsilon}
+
+\newcommand{\f}{\phi}
+\newcommand{\ff}{{\vv\phi}}
+\newcommand{\ffs}{{\vv\phi}^*}
+\newcommand{\hatff}{{\vv{\hat\phi}}}
+
+
+\newcommand{\W}{{\mathbb W}}
+
+
+\usepackage{xargs}                      % Use more than one optional parameter in a new commands
+%\usepackage[pdftex,dvipsnames]{xcolor}  % Coloured text etc
+\usepackage{xcolor}
+
+
+\newcommand{\smallo}[1]{{{o}}{\left(#1\right)}}
+
+\newcommand{\bigO}[1]{{O}{\left(#1\right)}}
+
+\newcommand{\pbigO}[1]{{O}_p{\left(#1\right)}}
+
+\newcommand{\fullversion}[1]{{}}
+
+\newcommand{\cutspace}[1]{}
+
+\newcommandx{\todonew}[2][1=]{\todo[#1]{#2}}
+%\renewcommand{\todo}[1]{}
+\newcommand{\todoold}[1]{}
+\newcommandx{\futurework}[2][1=]{\todo[linecolor=red,backgroundcolor=red!25,bordercolor=red,#1]{#2}}
+
+
+
+%\renewcommand{\div}{\mathrm{div}}
+
+\newcommand{\grad}{\mathrm{grad}}
+
+\newcommand{\mmd}{\mathbb{M}}
+
+\newcommand{\fisher}{\mathbb{F}}
+
+\newcommand{\hess}{\mathbb{Hess}}
+
+
+\newcommand{\dx}{\mathrm{d}x}
+\newcommand{\dxx}{\mathrm{d}\vx}
+\newcommand{\dy}{\mathrm{d}y}
+\newcommand{\dno}{\mathrm{d}}
+\newcommand{\dt}{\mathrm{d}t}
+\newcommand{\ddt}{\frac{\d}{\dt}}
+\newcommand{\ddtdot}{\dot}
+\newcommand{\dX}{\mathrm{d}X}
+\newcommand{\dW}{\mathrm{d}W}
+
+
+
+
+\newcommand{\bl}{d_\mathrm{BL}}
+
+\newcommand{\BL}{\mathrm{BL}}
+
+\newcommand{\lip}{\mathrm{Lip}}
+
+\newcommand{\weakto}{\Rightarrow}
+
+\newcommand{\map}{\Phi_p}
+
+\newcommand{\nablax}{\nabla_{\vv x}}
+
+\newcommand{\Hd}{\H}
+
+\newcommand{\xii}{x^{i}}
+
+\newcommand{\muo}{Q}
+
+\newcommand{\hatmu}{\hat{\mu}}
+
+\newcommand{\Cset}{C}
+\newcommand{\Wset}{W}
+\newcommand{\Lset}{L}
+\newcommand{\Xset}{X}
+\newcommand{\Mset}{M}
+
+\newcommand{\defeq}{\coloneqq}
+
+
+%%%%%%
+\newcommand\norm[1]{\left\lVert#1\right\rVert}
+\newcommand\abs[1]{\left\lvert#1\right\rvert}
+
+
+\newcommand{\remark}[1]{\paragraph{Remark} {#1}}
+
+\newcommand{\steinp}{\mathcal{P}}
+\newcommand{\steinpx}{\mathcal{P}_{\vv x}}
+\newcommand{\steinpxp}{\mathcal{P}_{\vv\xp}}
+
+%\newocmmand{}
+ \newcommand{\prop}{r}
+\newcommand{\steinbxtransp}{\mathcal{R}_{\vv x}^\top}
+\newcommand{\steinbx}{\mathcal{R}_{\vv x}}
+\newcommand{\steinptransp}{\mathcal{P}_{\vv x}^\top}
+\newcommand{\steinpxtransp}{\mathcal{P}_{\vv x}^\top}
+
+
+
+\newcommand{\steinq}{\mathcal{Q}}
+\newcommand{\steinqx}{\mathcal{Q}_{\vv x}}
+
+
+\newcommand{\dist}[1]{\uppercase{\mathbb{#1}}}
+\newcommand{\dens}[1]{\lowercase{#1}}
+\newcommand{\randv}[1]{\mathbf{#1}}
+
+
+\newcommand{\mat}[1]{\boldsymbol{#1}}
+\newcommand{\opt}[1]{\mathcal{#1}}
+\newcommand{\set}[1]{{\uppercase{#1}}}
+\renewcommand{\RR}{\mathbb{R}}
+
+\newcommand{\funcset}[1]{\mathcal{#1}}%{\mathfrak{#1}}
+\newcommand{\distset}[1]{\mathfrak{#1}}
+
+\newcommand{\F}{{\funcset{F}}}
+\renewcommand{\H}{{\funcset{H}}}
+\renewcommand{\L}{{\funcset{L}}}
+\renewcommand{\C}{{\funcset{C}}}
+\renewcommand{\W}{{\funcset{W}}}
+
+
+
+\newcommand{\xp}{y}
+
+ \def\bb#1\ee{\begin{align*}#1\end{align*}}
+
+ \def\bba#1\eea{\begin{align}#1\end{align}}
+ 
+ \def\bbb#1\eee{\begin{align}#1\end{align}}
+ 
+ 
+ \newcommand{\ke}{{\mathbf{k}}}
+ \newcommand{\kk}{{\vv{K}}}
+\newcommand{\kp}{{\mathbf{\kappa}_p}}
+\newcommand{\kpp}{{\mathbf{\kappa}_{p+}}}
+
+ 
+ \renewcommand{\v}{\vv}
+ \newcommand{\vtheta}{{\vv\theta}}
+  \newcommand{\vy}{{\vv{y}}}
+\newcommand{\steinpy}{\mathcal{P}_{\vv \xp}}
+
+\newcommand{\dto}{\overset{d}{\longrightarrow}} 
+\newcommand{\iidsim}{\overset{i.i.d.}{\sim}} 
+
+\newcommand{\qdata}{{Q}_0}
+\newcommand{\qdatak}{{Q}_k}
+
+
+\newcommand{\stepsize}{\xi}
+
+\newcommand{\supp}{\mathrm{supp}}
+
+
+
+\newcommand{\entr}{\mathbb{H}}
+
+\newcommand{\qq}[1]{\red{\scriptsize[#1]}}
+
+\newcommand{\qqq}[1]{}%\blue{\scriptsize[#1]}}
+
+
+\usepackage{tikz}
+
+\newcommand{\simley}[1]{%
+\begin{tikzpicture}[scale=0.11]
+    \newcommand*{\SmileyRadius}{1.0}%
+    \draw [fill=brown!10] (0,0) circle (\SmileyRadius)% outside circle
+        %node [yshift=-0.22*\SmileyRadius cm] {\tiny #1}% uncomment this to see the smile factor
+        ;  
+
+    \pgfmathsetmacro{\eyeX}{0.5*\SmileyRadius*cos(30)}
+    \pgfmathsetmacro{\eyeY}{0.5*\SmileyRadius*sin(30)}
+    \draw [fill=cyan,draw=none] (\eyeX,\eyeY) circle (0.15cm);
+    \draw [fill=cyan,draw=none] (-\eyeX,\eyeY) circle (0.15cm);
+
+    \pgfmathsetmacro{\xScale}{2*\eyeX/180}
+    \pgfmathsetmacro{\yScale}{1.0*\eyeY}
+    \draw[color=red, domain=-\eyeX:\eyeX]   
+        plot ({\x},{
+            -0.1+#1*0.15 % shift the smiley as smile decreases
+            -#1*1.75*\yScale*(sin((\x+\eyeX)/\xScale))-\eyeY});
+\end{tikzpicture}%
+}%
+
+% \newcommand{\qqq}[1]{\med{\simley{1}:~``#1"}}
+
+
+\newcommand{\dd}{\nabla}
+
+
+\newcommand{\qiangfuture}[1]{\red{#1}}
+
+\renewcommand{\tt}{^\top}
+
+\newcommand{\Fisher}{\mathbb{F}}
+
+\newcommand{\dataset}{\vx_{1:n}}%{{\mathcal{\textbf{}D}}}
+
+\newcommand{\hatq}{\hat{q}}
+
+\newcommand{\pinfty}{{+\infty}}
+
+\newcommand{\rd}[1]{\uppercase{#1}}
+
+
+\newcommand{\p}{p}
+
+\renewcommand{\T}{{{T}}}
+\renewcommand{\t}{{{T}}}
+
+\renewcommand{\P}{\dist{P}}
+
+\newcommand{\q}{q}
+
+\newcommand{\meas}[1]{\mathbb{#1}}% measure
+
+\newcommand{\wto}{{\Rightarrow}} %\to}}
+
+\newcommand{\datai}{^{(i)}}
+\newcommand{\dataidx}[1]{^{(#1)}}
+
+\renewcommand{\qdata}{\pi_{\textrm{data}}}
+
+\newcommand{\hh}{h}
+
+\newcommand{\tm}{{\tau}} 
+
+\newcommand{\Z}{{\vv{Z}}}
+
+\renewcommand{\x}{x}
+
+
+\newcommand{\ito}{\mathrm{Ito}}
+
+\newcommand{\tg}{{\pi}}
+\newcommand{\hattg}{{\hat\pi}}
+
+\newcommand{\const}{const}
+
+
+\newcommand{\ymax}{{y_{\max}}}
+
+\newcommand{\cauchy}{\mathrm{Cauchy}}
+
+\newcommand{\invgamma}{\mathrm{InvGamma}}
+
+\newcommand{\ber}{\mathrm{Ber}}
+
+\renewcommand{\d}{\mathrm{d}}
+
+\newcommand{\tgd}{{\pi}}
+
+
+\newcommand{\bridge}{\mathrm{Bridge}} 
+\newcommand{\tauu}{T} 
+\newcommand{\law}{\mathrm{Law}}
+\newcommand{\rev}[1]{\tilde{#1}}
+\newcommand{\uniform}{\textrm{Uniform}}
+\renewcommand{\bar}{\overline}
+\newcommand{\true}{^*}
+\newcommand{\thetat}{{\theta\true}} 
+
+\newcommand{\dish}[1]{\lfloor#1\rfloor_h}
+
+\newcommand{\disc}[2]{\lfloor#1\rfloor_{#2}}
+
+\newcommand{\M}{\meas{M}}
+
+\newcommand{\lst}{{[0,t]}}
+
+\newcommand{\Qt}{\Q^\tg}
+\newcommand{\Qtt}{\Q^\tg}
+
+\newcommand{\Pt}{\P^\theta} 
+\newcommand{\Ptt}{\P^{\theta^*}} 
+\newcommand{\stt}{s^{\theta^*}} 
+\newcommand{\etat}{\eta^{\tg}}  
+
+\newcommand{\mrk}{{Markovization}} %{{Markovianization}}
+
+\newcommand{\proj}{\mathrm{Proj}}
+\newcommand{\tk}{{t_k}}
+
+\renewcommand{\check}{\textbf{\red{\tiny[typo check]}}}
+
+\newcommand{\barQ}{\Q}
+
+\newcommand{\eps}{\epsilon} 
+
+\newcommand{\ts}{\tilde{s}} 
+
+\newcommand{\pia}{\Pi_0} 
+\newcommand{\pib}{\Pi_1} 
+\newcommand{\pit}{\Pi_t} 
+
+
+
+\newcommand{\lf}{\left} 
+\newcommand{\rt}{\right}
+
+
+\renewcommand{\div}{\dd\cdot}
+\newcommand{\divx}{\dd_x\cdot}
+\newcommand{\Law}{\law}
+
+%\usepackage{apacite}% this sorts bib alphabetically
+
+
+\newcommand{\id}{\mathrm{Id}}
+
+\newcommand{\df}[2]{\frac{\d #1}{\d #2}}
+
+\renewcommand{\ss}{\sharp}
+
+\newcommand{\zip}{\times} 
+\newcommand{\inv}{^{-1}}
+
+\newcommand{\deq}{\overset{\mathrm{law}}{=}}
+
+\newcommand{\Unif}{\mathrm{Uniform}}
+
+\newcommand{\mixup}{\mathrm{mixup}}
+\newcommand{\flow}{\mathrm{flow}}
+
+\newcommand{\mixupmap}{\mathtt{Rectify}}
+\newcommand{\rectify}{\mathtt{Rectify}}
+
+\newcommand{\Rectify}{\mathtt{RECTIFY}}
+\newcommand{\rectifyflow}{\mathtt{RectFlow}}
+
+
+\newcommand{\vofX}{v^\X}
+
+\newcommand{\ppt}{\partial_t}
+
+\newcommand{\todo}[1]{\textbf{\med{$\sharp$TODO: #1$\sharp$}}}
+
+\newcommand{\traj}[1]{\vv{#1}}%{#1_{[0,1]}}%{\mathbf{#1}}
+
+
+\newcommand{\e}[1]{\E\left[#1\right]}
+
+\newcommand{\Y}{{\vv{Y}}} 
+
+%\newcommand{\reflow}[1]{\emph{Rectified step $k=#1$}}
+\newcommand{\reflow}[1]{\emph{#1-Rectified Flow}}
+
+
+\newcommand{\betatogamma}{\beta} 

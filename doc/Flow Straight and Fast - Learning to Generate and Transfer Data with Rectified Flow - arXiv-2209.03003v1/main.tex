@@ -1,0 +1,134 @@
+%\pdfoutput=1
+\documentclass[11pt]{article}
+
+\usepackage[numbers, compress]{natbib}
+
+\usepackage{fullpage,times}
+\usepackage{parskip}
+\usepackage{multirow}
+%\input{def}
+\usepackage{wrapfig}
+
+\usepackage{lipsum}  
+\makeatletter
+\newcommand{\printfnsymbol}[1]{%
+  \textsuperscript{\@fnsymbol{#1}}%
+}
+\makeatother
+
+\makeatletter
+\def\hlinewd#1{%
+\noalign{\ifnum0=`}\fi\hrule \@height #1 %
+\futurelet\reserved@a\@xhline}
+\makeatother
+
+\newcommand{\xc}[1]{\textcolor{blue}{XC: #1}}
+\newcommand{\cy}[1]{\textcolor{green}{CY: #1}}
+\newcommand{\lm}[1]{\textcolor{orange}{LM: #1}}
+% \newcommand{\rectifyflowtext}[1]{rectify flow}
+\title{
+%Fast Flows go Straight: 
+Flow Straight and Fast: \\ 
+ %Learning Transport Mappings with 
+ Learning to Generate and Transfer Data with 
+ {\Name} Flow 
+%A Simple Solution to
+%Solving 
+%the Alignment Problem 
+%%Learning Fast 
+%Straight Line 
+%Dynamics 
+%Learning Fast Flows following Straight ines 
+%for Generative Modeling and Domain Transfer
+}
+%\qq{learning one-step flow }
+%A Simple Distribution Generator and Transformer}
+\author{%
+	Xingchao Liu\thanks{XL and CG contributed equally to this work.}\\
+    ~University of Texas at Austin\\
+	\texttt{xcliu@utexas.edu}
+	\and
+	Chengyue Gong\printfnsymbol{1}\\
+	~University of Texas at Austin\\
+	\texttt{cygong@cs.utexas.edu} \\
+	\and 
+	Qiang Liu\\
+	University of Texas at Austin\\
+	\texttt{lqiang@cs.utexas.edu} \\
+}
+
+\date{}
+
+\usepackage{qiangstyle}
+
+\begin{document}
+
+
+\definecolor{commentcolor}{RGB}{110,154,155}   % define comment color
+\definecolor{inputcolor}{RGB}{255, 105, 180}   
+\newcommand{\PyComment}[1]{\ttfamily\textcolor{commentcolor}{\# #1}}  % add a "#" before the input text "#1"
+\newcommand{\PyInput}[1]{\ttfamily\textcolor{inputcolor}{\# #1}}
+\newcommand{\PyCode}[1]{\ttfamily\textcolor{black}{#1}} % \ttfamily is the code font
+
+\maketitle
+%\qq{brainstorm titles}
+ 
+\begin{abstract}
+We present rectified flow, 
+a  surprisingly simple approach 
+to learning (neural) ordinary differential equation (ODE) models to transport between two empirically observed distributions $\tg_0$ and $\tg_1$,
+hence providing a unified solution to 
+generative modeling and domain transfer, among various other tasks involving distribution transport. 
+The idea of rectified flow is to learn the ODE to follow the straight paths connecting 
+the points drawn from $\tg_0$ and $\tg_1$ as much as possible. 
+This is  achieved by solving a straightforward nonlinear least squares optimization problem, 
+which can be easily scaled to large models 
+without introducing extra parameters beyond standard supervised learning. 
+%much hyperparameter tuning.
+The straight paths  
+are special and preferred because they are the shortest  
+paths between two points, and can be simulated exactly without time discretization and hence yield computationally efficient models.  
+We show that the procedure of learning a rectified flow from data, called rectification, turns an arbitrary coupling of $\tg_0$ and $\tg_1$ to a  new deterministic coupling with provably non-increasing convex transport costs. 
+In addition, recursively applying 
+rectification allows us to obtain a sequence of flows with increasingly straight paths, which can be simulated accurately with coarse time discretization in the inference phase. %The methods of
+%\qq{\todo} As we demonstrate 
+In empirical %Empirically, 
+studies, 
+we show that
+%the same algorithm of 
+rectified flow performs superbly on 
+image generation, 
+%provides an attractive and unified algorithm for all tasks involving distribution transferring, including generative modeling,
+image-to-image translation, and domain adaptation. 
+In particular, on image generation and translation, our method yields 
+nearly straight flows 
+that give high quality results even with \emph{a single Euler discretization step}. 
+\end{abstract}
+
+
+\input{arxiv_textfiles/method_new}
+
+\input{arxiv_textfiles/related_diffusion}
+
+\input{arxiv_textfiles/related_work} 
+\input{arxiv_textfiles/experiments}
+
+\newpage\clearpage
+% \input{texfiles/appendix_theory}
+
+
+\newpage
+\bibliography{z_diffusion_models} 
+\bibliographystyle{plainnat}
+
+\appendix 
+%\input{main/texfiles/diffusion}
+\newpage \clearpage
+\input{arxiv_textfiles/appendix}
+
+%\newpage \clearpage 
+%\input{texfiles/trash}
+%\input{texfiles/method}
+
+
+\end{document}

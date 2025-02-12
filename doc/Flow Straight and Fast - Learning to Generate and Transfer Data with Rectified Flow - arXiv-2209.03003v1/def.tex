@@ -1,0 +1,232 @@
+
+%----------loading packages------------------
+\usepackage{amsmath, amsthm, amssymb, amsfonts, mathtools, graphicx, enumerate}
+\usepackage{adjustbox}
+\usepackage[utf8]{inputenc} 
+\usepackage[T1]{fontenc}    
+\usepackage{url}            
+\usepackage{booktabs}
+\usepackage{nicefrac}       
+\usepackage{microtype}      
+\usepackage{xspace}
+\usepackage{algorithm,algorithmic}
+\usepackage{color}
+\usepackage{enumitem}
+\usepackage{comment}
+\usepackage{bm}
+\usepackage{apptools}
+\usepackage[page, header]{appendix}
+\usepackage{titletoc}
+\usepackage{array}
+
+
+
+\usepackage[scaled=.9]{helvet}
+
+\usepackage{url}
+\usepackage{caption}
+\usepackage[table,dvipsnames]{xcolor}
+\usepackage[colorlinks=true, linkcolor=blue, citecolor=blue]{hyperref}
+
+
+\usepackage{natbib}
+\bibliographystyle{plainnat}
+\bibpunct{(}{)}{;}{a}{,}{,}
+
+
+%----used for show labels
+%\usepackage[inner, left]{showlabels}
+
+
+
+\newcommand{\theHalgorithm}{\arabic{algorithm}}
+
+
+\usepackage{amsthm}   
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem{lem}[thm]{Lemma} 
+\newtheorem{mydef}[thm]{Definition} 
+\newtheorem{ass}[thm]{Assumption} 
+\newtheorem{exa}[thm]{Example} 
+\newtheorem{rmk}[thm]{Remark} 
+\newtheorem{pro}[thm]{Proposition}    % Setting theorem environment 
+% fix the spacing problem of theorem
+\begingroup
+    \makeatletter
+    \@for\theoremstyle:=definition,remark,plain\do{%
+        \expandafter\g@addto@macro\csname th@\theoremstyle\endcsname{%
+            \addtolength\thm@preskip\parskip
+            }%
+        }
+\endgroup
+
+
+
+
+
+%%%%%%%%%%%%%  COMMON  %%%%%%%%%%%%
+\newcommand{\myf}[2]{\frac{\displaystyle #1}{\displaystyle #2}}
+ \newcommand{\myp}[2]{\frac{\displaystyle \partial #1}{\displaystyle \partial  #2}}
+ \newcommand{\myb}[1]{\mbox{\boldmath$#1$}}
+ \newcommand{\eqnref}[1]{Eqn.~\eqref{#1}}
+\newcommand{\figref}[1]{Fig.~\ref{#1}}
+\newcommand{\Qiang}[1]{\textcolor{red}{#1}\\}
+\newcommand{\qiang}[1]{\textcolor{red}{#1}}
+\newcommand{\Todo}[1]{\textcolor{red}{TODO: #1}\\}
+\newcommand{\todo}[1]{\textcolor{gray}{TODO: #1}}
+\newcommand{\red}[1]{\textcolor{red}{#1}}
+\newcommand{\med}[1]{\textcolor{magenta}{#1}}
+\newcommand{\blue}[1]{\textcolor{blue}{#1}}
+\newcommand{\gray}[1]{\textcolor{gray}{#1}}
+\newcommand{\green}[1]{\textcolor{green}{#1}}
+\newcommand{\myempty}[1]{}
+
+\newcommand{\ant}[1]{~~~~~~~\text{\med{//#1}}}
+
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\V}{\mathbb{V}}
+\newcommand{\M}{\mathbb{M}}
+\newcommand{\HH}{\mathcal{H}}
+\newcommand{\B}{\mathcal{B}}
+\newcommand{\D}{\mathcal{D}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\C}{\mathcal{C}}
+\newcommand{\R}{\mathbb{R}}
+%\newcommand{\K}{{\funcset{B}_k}}
+\newcommand{\K}{\funcset{K}}%{\funcset{B}_k}}
+
+\newcommand{\A}{\mathbb{A}}
+
+\renewcommand{\S}{\mathbb{S}}
+
+\newcommand{\vx}{\boldsymbol{x}}
+\newcommand{\vv}[1]{\boldsymbol{#1}}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\newcommand{\RR}{\mathbb{R}}
+\newcommand{\neib}[1]{\partial{#1}}
+\newcommand{\normal}{\mathcal{N}}
+\newcommand{\var}{\mathrm{var}}
+\newcommand{\cov}{\mathrm{cov}}
+\newcommand{\KL}{\mathrm{KL}}
+
+\newcommand{\Remark}{\paragraph{Remark}}
+\newcommand{\remark}{\paragraph{Remark}}
+
+
+\newcommand{\trace}{\mathrm{trace}}
+\newcommand{\diag}{\mathrm{diag}}
+
+
+\newcommand{\la}{\langle}
+\newcommand{\ra}{\rangle}
+
+%%%%%%%%%%%%%% Big O notation %%%%%%%%%%%%%%
+\newcommand{\op}{o_p}
+\newcommand{\Op}{O_p}
+
+\newcommand{\od}{o}
+\newcommand{\Od}{O}
+
+\newcommand{\stein}{{\mathcal A}}
+
+
+\newcommand{\ind}{\mathbb{I}}
+\newcommand{\sign}{\mathrm{sign}}
+
+\newcommand{\prob}{\mathrm{Pr}}
+
+\newcommand{\score}{{\vv s}}
+
+
+\newcommand{\cd}{\mid}
+
+
+\renewcommand{\k}{{k}}
+
+\newcommand{\kp}{{\mathcal K_p}}
+\newcommand{\kpp}{{\mathcal K_{p+}}}
+
+\newcommand{\Kmatrix}{\vv{K}}
+
+
+%\newcommand{\l}{\left} 
+%\newcommand{\r}{\right} 
+
+\renewcommand{\R}{\mathcal{R}}
+\newcommand{\aseq}{=}%\overset{\text{\tiny{a.s.}}}{=}}
+
+
+\newcommand{\yihao}[1]{\textcolor{blue}{ #1}}
+\newcommand{\tongzheng}[1]{\textcolor{green}{[TZ: #1]}}
+\newcommand{\yrm}[1]{}
+\newcommand{\cP}{\mathcal{P}}
+
+
+
+
+\newcommand{\Dset}{\D}
+\newcommand{\Sset}{\mathcal{S}}
+\newcommand{\Aset}{\mathcal{A}}
+\newcommand{\Rset}{\mathbb{R}}
+\newcommand{\Pset}{\mathcal{P}}
+\newcommand{\mt}{{\operatorname{T}}}
+\newcommand{\mi}{{-1}}
+\newcommand{\defeq}{:=}
+\newcommand{\norm}[1]{\left\|#1\right\|}
+\newcommand{\abs}[1]{\left|#1\right|}
+
+\newcommand{\secref}[1]{Section~\ref{#1}}
+\newcommand{\thmref}[1]{Theorem~\ref{#1}}
+\newcommand{\corref}[1]{Corollary~\ref{#1}}
+\newcommand{\lemref}[1]{Lemma~\ref{#1}}
+
+
+\newcommand{\thetaTD}{\hat{\theta}_{\operatorname{TD}}}
+\newcommand{\sbar}{\bar{s}}
+\newcommand{\abar}{\bar{a}}
+\newcommand{\wb}{\pmb{w}}
+\newcommand{\pv}{\rho}
+
+\newcommand{\Fset}{\mathcal{F}}
+
+\newcommand{\qiangremoved}[1]{}
+\newcommand{\qq}[1]{\textcolor{red}{\tiny \text{#1}}}
+
+\newcommand{\Kf}{K_0}
+
+
+
+
+
+\newcommand{\Lrg}{L_{\operatorname{RG}}}
+\newcommand{\Lrghat}{\hat{L}_{\operatorname{RG}}}
+\newcommand{\Lfvi}{L_{\operatorname{FVI}}}
+\newcommand{\Lfvihat}{\hat{L}_{\operatorname{FVI}}}
+\newcommand{\Lk}{L_{\k}}
+\newcommand{\Lkhat}{\hat{L}_{\k}}
+\newcommand{\Lktilde}{\tilde{L}_{\k}}
+\renewcommand{\Lk}{L}
+\newcommand{\Lktrue}{L^*}
+
+\newcommand{\ellpiq}{\ell_q}
+
+ \def\bb#1\ee{\begin{align*}#1\end{align*}}
+
+ \def\bba#1\eea{\begin{align}#1\end{align}}
+
+\newcommand{\dno}{\mathrm{d}}
+
+
+
+\newcommand{\set}[1]{\mathcal{#1}}%\uppercase{#1}}%\mathsf}%{\mathcal}
+\newcommand{\funcset}{\mathcal}%\mathfrak}
+\newcommand{\dist}[1]{\mathsf{\uppercase{#1}}}%\uppercase}%{\mathsf}%\mathbb} 
+\newcommand{\emp}[1]{\hat{\dist{#1}}}
+\newcommand{\opt}[1]{{\mathbf{#1}}}
+
+

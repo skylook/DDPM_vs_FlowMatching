@@ -1,0 +1,165 @@
+\newcommand{\etalchar}[1]{$^{#1}$}
+\begin{thebibliography}{SSDK{\etalchar{+}}20}
+
+\bibitem[ABS21]{ambrosio2021lectures}
+Luigi Ambrosio, Elia Bru{\'e}, and Daniele Semola.
+\newblock {\em Lectures on optimal transport}.
+\newblock Springer, 2021.
+
+\bibitem[ACB17]{arjovsky2017wasserstein}
+Martin Arjovsky, Soumith Chintala, and L{\'e}on Bottou.
+\newblock Wasserstein generative adversarial networks.
+\newblock In {\em International conference on machine learning}, pages
+  214--223. PMLR, 2017.
+
+\bibitem[AHW95]{auer1995exponentially}
+Peter Auer, Mark Herbster, and Manfred~KK Warmuth.
+\newblock Exponentially many local minima for single neurons.
+\newblock {\em Advances in neural information processing systems}, 8, 1995.
+
+\bibitem[BB00]{benamou2000computational}
+Jean-David Benamou and Yann Brenier.
+\newblock A computational fluid mechanics solution to the monge-kantorovich
+  mass transfer problem.
+\newblock {\em Numerische Mathematik}, 84(3):375--393, 2000.
+
+\bibitem[BMD{\etalchar{+}}05]{banerjee2005clustering}
+Arindam Banerjee, Srujana Merugu, Inderjit~S Dhillon, Joydeep Ghosh, and John
+  Lafferty.
+\newblock Clustering with bregman divergences.
+\newblock {\em Journal of machine learning research}, 6(10), 2005.
+
+\bibitem[CFT14]{courty2014domain}
+Nicolas Courty, R{\'e}mi Flamary, and Devis Tuia.
+\newblock Domain adaptation with regularized optimal transport.
+\newblock In {\em Joint European Conference on Machine Learning and Knowledge
+  Discovery in Databases}, pages 274--289. Springer, 2014.
+
+\bibitem[EMM12]{el2012bayesian}
+Tarek~A El~Moselhy and Youssef~M Marzouk.
+\newblock Bayesian inference with optimal maps.
+\newblock {\em Journal of Computational Physics}, 231(23):7815--7850, 2012.
+
+\bibitem[FG21]{figalli2021invitation}
+Alessio Figalli and Federico Glaudo.
+\newblock {\em An Invitation to Optimal Transport, Wasserstein Distances, and
+  Gradient Flows}.
+\newblock 2021.
+
+\bibitem[HCTC20]{huang2020convex}
+Chin-Wei Huang, Ricky~TQ Chen, Christos Tsirigotis, and Aaron Courville.
+\newblock Convex potential flows: Universal probability distributions with
+  optimal transport and convex optimization.
+\newblock {\em arXiv preprint arXiv:2012.05942}, 2020.
+
+\bibitem[HD05]{hyvarinen2005estimation}
+Aapo Hyv{\"a}rinen and Peter Dayan.
+\newblock Estimation of non-normalized statistical models by score matching.
+\newblock {\em Journal of Machine Learning Research}, 6(4), 2005.
+
+\bibitem[HL04]{hunter2004tutorial}
+David~R Hunter and Kenneth Lange.
+\newblock A tutorial on mm algorithms.
+\newblock {\em The American Statistician}, 58(1):30--37, 2004.
+
+\bibitem[KLG{\etalchar{+}}21]{korotin2021neural}
+Alexander Korotin, Lingxiao Li, Aude Genevay, Justin~M Solomon, Alexander
+  Filippov, and Evgeny Burnaev.
+\newblock Do neural optimal transport solvers work? a continuous wasserstein-2
+  benchmark.
+\newblock {\em Advances in Neural Information Processing Systems},
+  34:14593--14605, 2021.
+
+\bibitem[KSB22]{korotin2022neural}
+Alexander Korotin, Daniil Selikhanovych, and Evgeny Burnaev.
+\newblock Neural optimal transport.
+\newblock {\em arXiv preprint arXiv:2201.12220}, 2022.
+
+\bibitem[Kur11]{kurtz2011equivalence}
+Thomas~G Kurtz.
+\newblock Equivalence of stochastic equations and martingale problems.
+\newblock In {\em Stochastic analysis 2010}, pages 113--130. Springer, 2011.
+
+\bibitem[LGL22]{rectified}
+Xingchao Liu, Chengyue Gong, and Qiang Liu.
+\newblock Flow straight and fast: Learning to generate and transfer data with
+  rectified flow.
+\newblock {\em preprint}, 2022.
+
+\bibitem[McC97]{mccann1997convexity}
+Robert~J McCann.
+\newblock A convexity principle for interacting gases.
+\newblock {\em Advances in mathematics}, 128(1):153--179, 1997.
+
+\bibitem[MMPS16]{marzouk2016introduction}
+Youssef Marzouk, Tarek Moselhy, Matthew Parno, and Alessio Spantini.
+\newblock An introduction to sampling via measure transport.
+\newblock {\em arXiv e-prints}, pages arXiv--1602, 2016.
+
+\bibitem[MTOL20]{makkuva2020optimal}
+Ashok Makkuva, Amirhossein Taghvaei, Sewoong Oh, and Jason Lee.
+\newblock Optimal transport mapping via input convex neural networks.
+\newblock In {\em International Conference on Machine Learning}, pages
+  6672--6681. PMLR, 2020.
+
+\bibitem[OPV14]{ollivier2014optimal}
+Yann Ollivier, Herv{\'e} Pajot, and Cedric Villani.
+\newblock {\em Optimal Transportation: Theory and Applications}.
+\newblock Number 413. Cambridge University Press, 2014.
+
+\bibitem[PC{\etalchar{+}}19]{peyre2019computational}
+Gabriel Peyr{\'e}, Marco Cuturi, et~al.
+\newblock Computational optimal transport: With applications to data science.
+\newblock {\em Foundations and Trends{\textregistered} in Machine Learning},
+  11(5-6):355--607, 2019.
+
+\bibitem[San15]{santambrogio2015optimal}
+Filippo Santambrogio.
+\newblock Optimal transport for applied mathematicians.
+\newblock {\em Birk{\"a}user, NY}, 55(58-63):94, 2015.
+
+\bibitem[SE19]{song2019generative}
+Yang Song and Stefano Ermon.
+\newblock Generative modeling by estimating gradients of the data distribution.
+\newblock {\em Advances in Neural Information Processing Systems}, 32, 2019.
+
+\bibitem[SME20]{song2020denoising}
+Jiaming Song, Chenlin Meng, and Stefano Ermon.
+\newblock Denoising diffusion implicit models.
+\newblock In {\em International Conference on Learning Representations}, 2020.
+
+\bibitem[SRGB14]{solomon2014wasserstein}
+Justin Solomon, Raif Rustamov, Leonidas Guibas, and Adrian Butscher.
+\newblock Wasserstein propagation for semi-supervised learning.
+\newblock In {\em International Conference on Machine Learning}, pages
+  306--314. PMLR, 2014.
+
+\bibitem[SSDK{\etalchar{+}}20]{song2020score}
+Yang Song, Jascha Sohl-Dickstein, Diederik~P Kingma, Abhishek Kumar, Stefano
+  Ermon, and Ben Poole.
+\newblock Score-based generative modeling through stochastic differential
+  equations.
+\newblock In {\em International Conference on Learning Representations}, 2020.
+
+\bibitem[TT16]{trigila2016data}
+Giulio Trigila and Esteban~G Tabak.
+\newblock Data-driven optimal transport.
+\newblock {\em Communications on Pure and Applied Mathematics}, 69(4):613--648,
+  2016.
+
+\bibitem[Vil09]{villani2009optimal}
+C{\'e}dric Villani.
+\newblock {\em Optimal transport: old and new}, volume 338.
+\newblock Springer, 2009.
+
+\bibitem[Vil21]{villani2021topics}
+C{\'e}dric Villani.
+\newblock {\em Topics in optimal transportation}, volume~58.
+\newblock American Mathematical Soc., 2021.
+
+\bibitem[Vin11]{vincent2011connection}
+Pascal Vincent.
+\newblock A connection between score matching and denoising autoencoders.
+\newblock {\em Neural computation}, 23(7):1661--1674, 2011.
+
+\end{thebibliography}
