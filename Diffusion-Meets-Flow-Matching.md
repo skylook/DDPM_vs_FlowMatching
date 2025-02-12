@@ -2,7 +2,7 @@
 
 ## 引言
 
-Flow matching 和 diffusion models 是生成模型领域的两个重要框架。尽管它们看起来很相似，但社区中对它们之间的具体联系仍存在一些困惑。本文旨在厘清这种困惑，并展示一个重要发现：**diffusion models 和 Gaussian flow matching 本质上是等价的**，只是不同的模型设定会导致不同的网络输出和采样方案。这个发现意味着我们可以交替使用这两个框架。
+Flow Matching 和 Diffusion models 是生成模型领域的两个重要框架。尽管它们看起来很相似，但社区中对它们之间的具体联系仍存在一些困惑。本文旨在厘清这种困惑，并展示一个重要发现：**diffusion models 和 Gaussian flow matching 本质上是等价的**，只是不同的模型设定会导致不同的网络输出和采样方案。这个发现意味着我们可以交替使用这两个框架。
 
 近期，Flow matching 因其简单的理论基础和"直线"采样轨迹而受到广泛关注。这引发了一个常见问题：
 
@@ -162,20 +162,68 @@ $$\begin{aligned}
 这种统一视角不仅帮助我们理解这两个框架，还启发了新的混合采样策略的可能性。
 
 ## 3. 理论基础
-### 3.1 DDPM 原理
-- 扩散过程（Forward Process）
-- 去噪过程（Reverse Process）
-- DDIM 采样策略
 
-### 3.2 Flow Matching 原理
-- 最优传输理论
-- 速度场估计
-- 轨迹生成方法
+### 3.1 SDE 视角的统一理解
 
-### 3.3 数学联系
-- SDE 视角的统一
-- 目标函数的对比
-- 采样效率分析
+从随机微分方程（SDE）的角度来看，这两个框架可以被统一起来。考虑以下形式的 SDE：
+
+$$d\mathbf{z} = \mathbf{f}(\mathbf{z}, t)dt + g(t)d\mathbf{w} \tag{13}$$
+
+其中：
+- $\mathbf{f}(\mathbf{z}, t)$ 是漂移项（drift term）
+- $g(t)$ 是扩散系数（diffusion coefficient）
+- $\mathbf{w}$ 是标准维纳过程（Wiener process）
+
+#### DDPM 的 SDE 形式
+
+对于 DDPM，我们可以写出其对应的 SDE：
+
+$$d\mathbf{z} = -\frac{1}{2}\beta(t)\mathbf{z}dt + \sqrt{\beta(t)}d\mathbf{w} \tag{14}$$
+
+其中 $\beta(t)$ 是噪声调度，与前面的 $\alpha_t$ 和 $\sigma_t$ 有关：
+$$\alpha_t = \exp\left(-\frac{1}{2}\int_0^t\beta(s)ds\right) \tag{15}$$
+
+#### Flow Matching 的 ODE 形式
+
+Flow Matching 可以看作是上述 SDE 的一个特例，即当 $g(t) = 0$ 时，我们得到一个普通微分方程（ODE）：
+
+$$d\mathbf{z} = \mathbf{v}(\mathbf{z}, t)dt \tag{16}$$
+
+其中 $\mathbf{v}(\mathbf{z}, t)$ 是我们要学习的向量场。
+
+#### 两者的联系
+
+这两个框架的关键区别在于：
+1. DDPM 通过随机过程建模轨迹
+2. Flow Matching 通过确定性流建模轨迹
+
+但它们都可以用以下形式统一表示：
+
+$$d\mathbf{z} = \mathbf{v}(\mathbf{z}, t)dt + \sigma(t)d\mathbf{w} \tag{17}$$
+
+其中：
+- 当 $\sigma(t) = 0$ 时，我们得到 Flow Matching
+- 当 $\sigma(t) = \sqrt{\beta(t)}$ 时，我们得到 DDPM
+
+### 3.2 采样路径的理论分析
+
+基于上述统一视角，我们可以理解为什么这两个框架会产生不同的采样路径：
+
+1. **确定性路径**：
+   - Flow Matching 的路径完全由向量场决定
+   - DDIM 通过去除随机性实现类似的确定性路径
+
+2. **随机路径**：
+   - DDPM 的路径包含随机扰动
+   - Flow Matching 也可以通过向向量场添加随机扰动实现类似效果
+
+这种理解启发我们可以设计混合策略：
+
+$$d\mathbf{z} = \mathbf{v}(\mathbf{z}, t)dt + \eta\sigma(t)d\mathbf{w} \tag{18}$$
+
+其中 $\eta \in [0,1]$ 控制随机性的程度：
+- $\eta = 0$ 对应纯确定性路径
+- $\eta = 1$ 对应完全随机路径
 
 ## 4. 实验设计
 ### 4.1 椭圆分布拟合任务
