@@ -99,6 +99,19 @@ $$\mathcal{L}_{\text{FM}} = \mathbb{E}_{t,\mathbf{x},\boldsymbol{\epsilon}}\left
 2. 在 Flow Matching 中，模型直接预测向量场 $\hat{\mathbf{v}}$，它等价于：
    $$\hat{\mathbf{v}} = \hat{\mathbf{x}} - \hat{\boldsymbol{\epsilon}}$$
 
+### 网络输出的不同形式
+
+文献中提出了几种不同的网络输出形式，它们可以相互转换。每种形式对应的 MSE 损失也有所不同：
+
+| 网络输出 | 公式 | MSE 损失 |
+|---------|------|----------|
+| $\hat{\boldsymbol{\epsilon}}$-预测 | $\hat{\boldsymbol{\epsilon}}$ | $\|\hat{\boldsymbol{\epsilon}} - \boldsymbol{\epsilon}\|^2$ |
+| $\hat{\mathbf{x}}$-预测 | $\hat{\mathbf{x}} = \frac{\mathbf{z}_t - \sigma_t\hat{\boldsymbol{\epsilon}}}{\alpha_t}$ | $\|\hat{\mathbf{x}} - \mathbf{x}\|^2 = e^{-\lambda}\|\hat{\boldsymbol{\epsilon}} - \boldsymbol{\epsilon}\|^2$ |
+| $\hat{\mathbf{v}}$-预测 | $\hat{\mathbf{v}} = \alpha_t\hat{\boldsymbol{\epsilon}} - \sigma_t\hat{\mathbf{x}}$ | $\|\hat{\mathbf{v}} - \mathbf{v}\|^2 = \alpha_t^2(e^{-\lambda} + 1)^2\|\hat{\boldsymbol{\epsilon}} - \boldsymbol{\epsilon}\|^2$ |
+| Flow Matching 向量场 | $\hat{\mathbf{u}} = \hat{\boldsymbol{\epsilon}} - \hat{\mathbf{x}}$ | $\|\hat{\mathbf{u}} - \mathbf{u}\|^2 = (e^{-\lambda/2} + 1)^2\|\hat{\boldsymbol{\epsilon}} - \boldsymbol{\epsilon}\|^2$ |
+
+其中 $\lambda = \log(\alpha_t^2/\sigma_t^2)$ 是对数信噪比。
+
 3. 当使用线性噪声调度 $\alpha_t = 1-t, \sigma_t = t$ 时，这两个框架的预测可以相互转换：
 
    $$\begin{aligned}
@@ -110,6 +123,25 @@ $$\mathcal{L}_{\text{FM}} = \mathbb{E}_{t,\mathbf{x},\boldsymbol{\epsilon}}\left
    $$\|\boldsymbol{\epsilon} - \hat{\boldsymbol{\epsilon}}\|^2 = \|\mathbf{u} - \hat{\mathbf{v}}\|^2$$
 
 这意味着最小化 DDPM 的噪声预测误差等价于最小化 Flow Matching 的向量场预测误差。
+
+### DDIM 更新公式的详细推导
+
+回顾 DDIM 的更新公式：
+
+$$\begin{aligned}
+\mathbf{z}_s - \mathbf{z}_t &= (\alpha_s - \alpha_t)\hat{\mathbf{x}} + (\sigma_s - \sigma_t)\hat{\boldsymbol{\epsilon}} \\
+&= (\alpha_s - \alpha_t)\hat{\mathbf{x}} + (\sigma_s - \sigma_t)\hat{\boldsymbol{\epsilon}} \\
+&= (\alpha_s - \alpha_t)(\hat{\mathbf{x}} - \hat{\boldsymbol{\epsilon}}) + (\alpha_s - \alpha_t + \sigma_s - \sigma_t)\hat{\boldsymbol{\epsilon}} \\
+&= (\alpha_s - \alpha_t)(\hat{\mathbf{x}} - \hat{\boldsymbol{\epsilon}}) \\
+&= \hat{\mathbf{v}} \cdot (\eta_s - \eta_t)
+\end{aligned}$$
+
+这里的关键步骤是：
+1. 首先把 $(\sigma_s - \sigma_t)\hat{\boldsymbol{\epsilon}}$ 拆分为 $[(\alpha_s - \alpha_t) + (\sigma_s - \sigma_t)]\hat{\boldsymbol{\epsilon}} - (\alpha_s - \alpha_t)\hat{\boldsymbol{\epsilon}}$
+2. 注意到在线性噪声调度下，$\alpha_s - \alpha_t + \sigma_s - \sigma_t = 0$（因为 $\alpha_t + \sigma_t = 1$）
+3. 定义 $\hat{\mathbf{v}} = \hat{\mathbf{x}} - \hat{\boldsymbol{\epsilon}}$ 和 $\eta_t = \alpha_t - \sigma_t$
+
+这个推导展示了 DDIM 采样器和 Flow Matching 采样器在形式上的等价性。
 
 ### 2.3 采样策略的统一视角
 
