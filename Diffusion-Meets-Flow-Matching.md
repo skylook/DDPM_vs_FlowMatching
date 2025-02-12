@@ -22,7 +22,7 @@ Flow matching 和 diffusion models 是生成模型领域的两个重要框架。
 
 diffusion 过程通过向观测数据点 $\mathbf{x}$ 逐步添加高斯噪声来构建扩散过程。在时间 $t$ 时的带噪声数据由前向过程给出：
 
-$$\mathbf{z}_t = \alpha_t \mathbf{x} + \sigma_t \boldsymbol{\epsilon}, \quad \text{其中} \quad \boldsymbol{\epsilon} \sim \mathcal{N}(0, \mathbf{I})$$
+$$\mathbf{z}_t = \alpha_t \mathbf{x} + \sigma_t \boldsymbol{\epsilon}, \quad \text{其中} \quad \boldsymbol{\epsilon} \sim \mathcal{N}(0, \mathbf{I}) \tag{1}$$
 
 这里 $\alpha_t$ 和 $\sigma_t$ 定义了**噪声调度**。如果满足 $\alpha_t^2 + \sigma_t^2 = 1$，则称该噪声调度为方差保持的。噪声调度的设计使得 $\mathbf{z}_0$ 接近原始数据，而 $\mathbf{z}_1$ 接近标准高斯分布。
 
@@ -30,7 +30,7 @@ $$\mathbf{z}_t = \alpha_t \mathbf{x} + \sigma_t \boldsymbol{\epsilon}, \quad \te
 
 在 flow matching 中，我们将前向过程视为数据 $\mathbf{x}$ 和噪声项 $\boldsymbol{\epsilon}$ 之间的线性插值：
 
-$$\mathbf{z}_t = (1-t)\mathbf{x} + t\boldsymbol{\epsilon}$$
+$$\mathbf{z}_t = (1-t)\mathbf{x} + t\boldsymbol{\epsilon} \tag{2}$$
 
 当噪声是高斯分布时（即 Gaussian flow matching），这与使用调度 $\alpha_t = 1-t, \sigma_t = t$ 的 diffusion 前向过程是等价的。
 
@@ -43,7 +43,7 @@ $$\begin{aligned}
 &= (-t+s)\mathbf{x} + (t-s)\boldsymbol{\epsilon} \\
 &= (t-s)(\boldsymbol{\epsilon} - \mathbf{x}) \\
 &= \mathbf{u} \cdot (t - s)
-\end{aligned}$$
+\end{aligned} \tag{3}$$
 
 其中 $\mathbf{u} = \boldsymbol{\epsilon} - \mathbf{x}$ 是"速度"或"向量场"。
 
@@ -55,7 +55,7 @@ $$\begin{aligned}
 
 回顾 DDIM 的更新公式：
 
-$$\mathbf{z}_s = \alpha_s \hat{\mathbf{x}} + \sigma_s \hat{\boldsymbol{\epsilon}}$$
+$$\mathbf{z}_s = \alpha_s \hat{\mathbf{x}} + \sigma_s \hat{\boldsymbol{\epsilon}} \tag{4}$$
 
 我们可以通过以下步骤将其重写为增量形式：
 
@@ -65,7 +65,7 @@ $$\begin{aligned}
 \mathbf{z}_s - \mathbf{z}_t &= (\alpha_s - \alpha_t)\hat{\mathbf{x}} + (\sigma_s - \sigma_t)\hat{\boldsymbol{\epsilon}} \\
 &= (\alpha_s - \alpha_t)(\hat{\mathbf{x}} - \hat{\boldsymbol{\epsilon}}) \\
 &= \hat{\mathbf{v}} \cdot (\eta_s - \eta_t)
-\end{aligned}$$
+\end{aligned} \tag{5}$$
 
 其中 $\hat{\mathbf{v}} = \hat{\mathbf{x}} - \hat{\boldsymbol{\epsilon}}$ 是模型预测的向量场，$\eta_t = \alpha_t - \sigma_t$。
 
@@ -77,7 +77,7 @@ $$\begin{aligned}
 
 在 DDPM 中，我们通常最小化预测噪声的 MSE 损失：
 
-$$\mathcal{L}_{\text{DDPM}} = \mathbb{E}_{t,\mathbf{x},\boldsymbol{\epsilon}}\left[\|\boldsymbol{\epsilon} - \hat{\boldsymbol{\epsilon}}_\theta(\mathbf{z}_t, t)\|^2\right]$$
+$$\mathcal{L}_{\text{DDPM}} = \mathbb{E}_{t,\mathbf{x},\boldsymbol{\epsilon}}\left[\|\boldsymbol{\epsilon} - \hat{\boldsymbol{\epsilon}}_\theta(\mathbf{z}_t, t)\|^2\right] \tag{6}$$
 
 其中 $\hat{\boldsymbol{\epsilon}}_\theta$ 是神经网络预测的噪声。
 
@@ -85,7 +85,7 @@ $$\mathcal{L}_{\text{DDPM}} = \mathbb{E}_{t,\mathbf{x},\boldsymbol{\epsilon}}\le
 
 Flow Matching 的目标是学习一个向量场（velocity field），其损失函数为：
 
-$$\mathcal{L}_{\text{FM}} = \mathbb{E}_{t,\mathbf{x},\boldsymbol{\epsilon}}\left[\|\mathbf{u} - \hat{\mathbf{v}}_\theta(\mathbf{z}_t, t)\|^2\right]$$
+$$\mathcal{L}_{\text{FM}} = \mathbb{E}_{t,\mathbf{x},\boldsymbol{\epsilon}}\left[\|\mathbf{u} - \hat{\mathbf{v}}_\theta(\mathbf{z}_t, t)\|^2\right] \tag{7}$$
 
 其中 $\mathbf{u} = \boldsymbol{\epsilon} - \mathbf{x}$ 是真实向量场，$\hat{\mathbf{v}}_\theta$ 是神经网络预测的向量场。
 
@@ -94,35 +94,20 @@ $$\mathcal{L}_{\text{FM}} = \mathbb{E}_{t,\mathbf{x},\boldsymbol{\epsilon}}\left
 这两个目标函数看起来很不一样，但实际上它们是等价的。关键在于理解它们之间的转换关系：
 
 1. 在 DDPM 中，模型预测噪声 $\hat{\boldsymbol{\epsilon}}$，可以用来恢复原始数据 $\hat{\mathbf{x}}$：
-   $$\hat{\mathbf{x}} = \frac{\mathbf{z}_t - \sigma_t\hat{\boldsymbol{\epsilon}}}{\alpha_t}$$
+   $$\hat{\mathbf{x}} = \frac{\mathbf{z}_t - \sigma_t\hat{\boldsymbol{\epsilon}}}{\alpha_t} \tag{8}$$
 
 2. 在 Flow Matching 中，模型直接预测向量场 $\hat{\mathbf{v}}$，它等价于：
-   $$\hat{\mathbf{v}} = \hat{\mathbf{x}} - \hat{\boldsymbol{\epsilon}}$$
-
-### 网络输出的不同形式
-
-文献中提出了几种不同的网络输出形式，它们可以相互转换。每种形式对应的 MSE 损失也有所不同：
-
-| 网络输出 | 公式 | MSE 损失 |
-|---------|------|----------|
-| $\hat{\boldsymbol{\epsilon}}$-预测 | $\hat{\boldsymbol{\epsilon}}$ | $\|\hat{\boldsymbol{\epsilon}} - \boldsymbol{\epsilon}\|^2$ |
-| $\hat{\mathbf{x}}$-预测 | $\hat{\mathbf{x}} = \frac{\mathbf{z}_t - \sigma_t\hat{\boldsymbol{\epsilon}}}{\alpha_t}$ | $\|\hat{\mathbf{x}} - \mathbf{x}\|^2 = e^{-\lambda}\|\hat{\boldsymbol{\epsilon}} - \boldsymbol{\epsilon}\|^2$ |
-| $\hat{\mathbf{v}}$-预测 | $\hat{\mathbf{v}} = \alpha_t\hat{\boldsymbol{\epsilon}} - \sigma_t\hat{\mathbf{x}}$ | $\|\hat{\mathbf{v}} - \mathbf{v}\|^2 = \alpha_t^2(e^{-\lambda} + 1)^2\|\hat{\boldsymbol{\epsilon}} - \boldsymbol{\epsilon}\|^2$ |
-| Flow Matching 向量场 | $\hat{\mathbf{u}} = \hat{\boldsymbol{\epsilon}} - \hat{\mathbf{x}}$ | $\|\hat{\mathbf{u}} - \mathbf{u}\|^2 = (e^{-\lambda/2} + 1)^2\|\hat{\boldsymbol{\epsilon}} - \boldsymbol{\epsilon}\|^2$ |
-
-其中 $\lambda = \log(\alpha_t^2/\sigma_t^2)$ 是对数信噪比。
+   $$\hat{\mathbf{v}} = \hat{\mathbf{x}} - \hat{\boldsymbol{\epsilon}} \tag{9}$$
 
 3. 当使用线性噪声调度 $\alpha_t = 1-t, \sigma_t = t$ 时，这两个框架的预测可以相互转换：
 
    $$\begin{aligned}
    \text{DDPM} \rightarrow \text{FM}: \quad \hat{\mathbf{v}} &= \hat{\mathbf{x}} - \hat{\boldsymbol{\epsilon}} \\
    \text{FM} \rightarrow \text{DDPM}: \quad \hat{\boldsymbol{\epsilon}} &= \hat{\mathbf{x}} - \hat{\mathbf{v}}
-   \end{aligned}$$
+   \end{aligned} \tag{10}$$
 
 4. 更进一步，可以证明在这种调度下：
-   $$\|\boldsymbol{\epsilon} - \hat{\boldsymbol{\epsilon}}\|^2 = \|\mathbf{u} - \hat{\mathbf{v}}\|^2$$
-
-这意味着最小化 DDPM 的噪声预测误差等价于最小化 Flow Matching 的向量场预测误差。
+   $$\|\boldsymbol{\epsilon} - \hat{\boldsymbol{\epsilon}}\|^2 = \|\mathbf{u} - \hat{\mathbf{v}}\|^2 \tag{11}$$
 
 ### DDIM 更新公式的详细推导
 
@@ -134,7 +119,7 @@ $$\begin{aligned}
 &= (\alpha_s - \alpha_t)(\hat{\mathbf{x}} - \hat{\boldsymbol{\epsilon}}) + (\alpha_s - \alpha_t + \sigma_s - \sigma_t)\hat{\boldsymbol{\epsilon}} \\
 &= (\alpha_s - \alpha_t)(\hat{\mathbf{x}} - \hat{\boldsymbol{\epsilon}}) \\
 &= \hat{\mathbf{v}} \cdot (\eta_s - \eta_t)
-\end{aligned}$$
+\end{aligned} \tag{12}$$
 
 这里的关键步骤是：
 1. 首先把 $(\sigma_s - \sigma_t)\hat{\boldsymbol{\epsilon}}$ 拆分为 $[(\alpha_s - \alpha_t) + (\sigma_s - \sigma_t)]\hat{\boldsymbol{\epsilon}} - (\alpha_s - \alpha_t)\hat{\boldsymbol{\epsilon}}$
