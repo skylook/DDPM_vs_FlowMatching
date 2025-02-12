@@ -91,7 +91,26 @@ $$\mathcal{L}_{\text{FM}} = \mathbb{E}_{t,\mathbf{x},\boldsymbol{\epsilon}}\left
 
 ### 两者的等价性
 
-这两个目标函数看起来很不一样，但实际上它们是等价的。关键在于理解它们之间的转换关系：
+这两个目标函数看起来很不一样，但实际上它们是等价的。让我们先看看不同的网络输出形式：
+
+#### 网络输出的不同形式
+
+文献中提出了几种不同的网络输出形式，它们可以相互转换。每种形式对应的 MSE 损失也有所不同：
+
+| 网络输出 | 公式 | MSE 损失 |
+|---------|------|----------|
+| $\hat{\boldsymbol{\epsilon}}$-预测 | $\hat{\boldsymbol{\epsilon}}$ | $\|\hat{\boldsymbol{\epsilon}} - \boldsymbol{\epsilon}\|^2$ |
+| $\hat{\mathbf{x}}$-预测 | $\hat{\mathbf{x}} = \frac{\mathbf{z}_t - \sigma_t\hat{\boldsymbol{\epsilon}}}{\alpha_t}$ | $\|\hat{\mathbf{x}} - \mathbf{x}\|^2 = e^{-\lambda}\|\hat{\boldsymbol{\epsilon}} - \boldsymbol{\epsilon}\|^2$ |
+| $\hat{\mathbf{v}}$-预测 | $\hat{\mathbf{v}} = \alpha_t\hat{\boldsymbol{\epsilon}} - \sigma_t\hat{\mathbf{x}}$ | $\|\hat{\mathbf{v}} - \mathbf{v}\|^2 = \alpha_t^2(e^{-\lambda} + 1)^2\|\hat{\boldsymbol{\epsilon}} - \boldsymbol{\epsilon}\|^2$ |
+| Flow Matching 向量场 | $\hat{\mathbf{u}} = \hat{\boldsymbol{\epsilon}} - \hat{\mathbf{x}}$ | $\|\hat{\mathbf{u}} - \mathbf{u}\|^2 = (e^{-\lambda/2} + 1)^2\|\hat{\boldsymbol{\epsilon}} - \boldsymbol{\epsilon}\|^2$ |
+
+其中 $\lambda = \log(\alpha_t^2/\sigma_t^2)$ 是对数信噪比。这些不同的预测形式为我们提供了更多的实现选择，可以根据具体应用场景选择最合适的形式。
+
+这个表格展示了一个重要的事实：虽然这些预测形式看起来不同，但它们都可以通过简单的变换相互转换，并且它们的 MSE 损失之间存在确定的比例关系。这种等价性使得我们可以灵活地在不同的预测形式之间切换，而不会影响模型的本质性能。
+
+#### 转换关系
+
+基于上述不同形式的理解，我们可以看到这两个框架之间的具体转换关系：
 
 1. 在 DDPM 中，模型预测噪声 $\hat{\boldsymbol{\epsilon}}$，可以用来恢复原始数据 $\hat{\mathbf{x}}$：
    $$\hat{\mathbf{x}} = \frac{\mathbf{z}_t - \sigma_t\hat{\boldsymbol{\epsilon}}}{\alpha_t} \tag{8}$$
