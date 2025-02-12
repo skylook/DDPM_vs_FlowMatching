@@ -20,11 +20,11 @@ Flow matching 和 diffusion models 是生成模型领域的两个重要框架。
 
 ### 1.1 Diffusion Models 基础
 
-diffusion 过程通过逐步加入高斯噪声来gradually破坏一个观测数据点 $\mathbf{x}$（比如一张图片）。在时间 $t$ 时的带噪声数据由前向过程给出：
+diffusion 过程通过向观测数据点 $\mathbf{x}$ 逐步添加高斯噪声来构建扩散过程。在时间 $t$ 时的带噪声数据由前向过程给出：
 
 $$\mathbf{z}_t = \alpha_t \mathbf{x} + \sigma_t \boldsymbol{\epsilon}, \quad \text{其中} \quad \boldsymbol{\epsilon} \sim \mathcal{N}(0, \mathbf{I})$$
 
-这里 $\alpha_t$ 和 $\sigma_t$ 定义了**噪声调度**。如果满足 $\alpha_t^2 + \sigma_t^2 = 1$，则称该噪声调度为方差保持的。噪声调度的设计使得 $\mathbf{z}_0$ 接近干净数据，而 $\mathbf{z}_1$ 接近高斯噪声。
+这里 $\alpha_t$ 和 $\sigma_t$ 定义了**噪声调度**。如果满足 $\alpha_t^2 + \sigma_t^2 = 1$，则称该噪声调度为方差保持的。噪声调度的设计使得 $\mathbf{z}_0$ 接近原始数据，而 $\mathbf{z}_1$ 接近标准高斯分布。
 
 ### 1.2 Flow Matching 基础
 
@@ -34,11 +34,18 @@ $$\mathbf{z}_t = (1-t)\mathbf{x} + t\boldsymbol{\epsilon}$$
 
 当噪声是高斯分布时（即 Gaussian flow matching），这与使用调度 $\alpha_t = 1-t, \sigma_t = t$ 的 diffusion 前向过程是等价的。
 
-通过简单的代数运算，我们可以推导出对于 $s < t$，有：
+对于任意时间点 $s < t$，我们可以通过以下步骤推导出它们之间的关系：
 
-$$\mathbf{z}_t = \mathbf{z}_s + \mathbf{u} \cdot (t - s)$$
+$$\begin{aligned}
+\mathbf{z}_t &= (1-t)\mathbf{x} + t\boldsymbol{\epsilon} \\
+\mathbf{z}_s &= (1-s)\mathbf{x} + s\boldsymbol{\epsilon} \\
+\mathbf{z}_t - \mathbf{z}_s &= [(1-t)\mathbf{x} + t\boldsymbol{\epsilon}] - [(1-s)\mathbf{x} + s\boldsymbol{\epsilon}] \\
+&= (-t+s)\mathbf{x} + (t-s)\boldsymbol{\epsilon} \\
+&= (t-s)(\boldsymbol{\epsilon} - \mathbf{x}) \\
+&= \mathbf{u} \cdot (t - s)
+\end{aligned}$$
 
-其中 $\mathbf{u} = \boldsymbol{\epsilon} - \mathbf{x}$ 是"速度"、"流"或"向量场"。
+其中 $\mathbf{u} = \boldsymbol{\epsilon} - \mathbf{x}$ 是"速度"或"向量场"。
 
 ## 2. 采样过程的等价性
 
@@ -50,17 +57,73 @@ $$\mathbf{z}_t = \mathbf{z}_s + \mathbf{u} \cdot (t - s)$$
 
 $$\mathbf{z}_s = \alpha_s \hat{\mathbf{x}} + \sigma_s \hat{\boldsymbol{\epsilon}}$$
 
-通过重新排列项，它可以表示为：
+我们可以通过以下步骤将其重写为增量形式：
 
-$$\tilde{\mathbf{z}}_s = \tilde{\mathbf{z}}_t + \text{网络输出} \cdot (\eta_s - \eta_t)$$
+$$\begin{aligned}
+\mathbf{z}_s &= \alpha_s \hat{\mathbf{x}} + \sigma_s \hat{\boldsymbol{\epsilon}} \\
+\mathbf{z}_t &= \alpha_t \hat{\mathbf{x}} + \sigma_t \hat{\boldsymbol{\epsilon}} \\
+\mathbf{z}_s - \mathbf{z}_t &= (\alpha_s - \alpha_t)\hat{\mathbf{x}} + (\sigma_s - \sigma_t)\hat{\boldsymbol{\epsilon}} \\
+&= (\alpha_s - \alpha_t)(\hat{\mathbf{x}} - \hat{\boldsymbol{\epsilon}}) \\
+&= \hat{\mathbf{v}} \cdot (\eta_s - \eta_t)
+\end{aligned}$$
 
-这与 flow matching 的更新公式形式完全相同！具体来说，如果我们：
-1. 将网络输出设为 $\hat{\mathbf{u}}$
-2. 使用 $\alpha_t = 1-t, \sigma_t = t$ 的噪声调度
+其中 $\hat{\mathbf{v}} = \hat{\mathbf{x}} - \hat{\boldsymbol{\epsilon}}$ 是模型预测的向量场，$\eta_t = \alpha_t - \sigma_t$。
 
-那么我们就得到了完全相同的更新规则。换句话说：
+### 2.2 训练目标的等价性
 
-**使用 DDIM 采样器的 Diffusion == Flow matching 采样器（Euler）**
+让我们来看看这两个框架的训练目标是如何联系的。
+
+### DDPM 的训练目标
+
+在 DDPM 中，我们通常最小化预测噪声的 MSE 损失：
+
+$$\mathcal{L}_{\text{DDPM}} = \mathbb{E}_{t,\mathbf{x},\boldsymbol{\epsilon}}\left[\|\boldsymbol{\epsilon} - \hat{\boldsymbol{\epsilon}}_\theta(\mathbf{z}_t, t)\|^2\right]$$
+
+其中 $\hat{\boldsymbol{\epsilon}}_\theta$ 是神经网络预测的噪声。
+
+### Flow Matching 的训练目标
+
+Flow Matching 的目标是学习一个向量场（velocity field），其损失函数为：
+
+$$\mathcal{L}_{\text{FM}} = \mathbb{E}_{t,\mathbf{x},\boldsymbol{\epsilon}}\left[\|\mathbf{u} - \hat{\mathbf{v}}_\theta(\mathbf{z}_t, t)\|^2\right]$$
+
+其中 $\mathbf{u} = \boldsymbol{\epsilon} - \mathbf{x}$ 是真实向量场，$\hat{\mathbf{v}}_\theta$ 是神经网络预测的向量场。
+
+### 两者的等价性
+
+这两个目标函数看起来很不一样，但实际上它们是等价的。关键在于理解它们之间的转换关系：
+
+1. 在 DDPM 中，模型预测噪声 $\hat{\boldsymbol{\epsilon}}$，可以用来恢复原始数据 $\hat{\mathbf{x}}$：
+   $$\hat{\mathbf{x}} = \frac{\mathbf{z}_t - \sigma_t\hat{\boldsymbol{\epsilon}}}{\alpha_t}$$
+
+2. 在 Flow Matching 中，模型直接预测向量场 $\hat{\mathbf{v}}$，它等价于：
+   $$\hat{\mathbf{v}} = \hat{\mathbf{x}} - \hat{\boldsymbol{\epsilon}}$$
+
+3. 当使用线性噪声调度 $\alpha_t = 1-t, \sigma_t = t$ 时，这两个框架的预测可以相互转换：
+
+   $$\begin{aligned}
+   \text{DDPM} \rightarrow \text{FM}: \quad \hat{\mathbf{v}} &= \hat{\mathbf{x}} - \hat{\boldsymbol{\epsilon}} \\
+   \text{FM} \rightarrow \text{DDPM}: \quad \hat{\boldsymbol{\epsilon}} &= \hat{\mathbf{x}} - \hat{\mathbf{v}}
+   \end{aligned}$$
+
+4. 更进一步，可以证明在这种调度下：
+   $$\|\boldsymbol{\epsilon} - \hat{\boldsymbol{\epsilon}}\|^2 = \|\mathbf{u} - \hat{\mathbf{v}}\|^2$$
+
+这意味着最小化 DDPM 的噪声预测误差等价于最小化 Flow Matching 的向量场预测误差。
+
+### 2.3 采样策略的统一视角
+
+有了这种等价性理解，我们可以在两个框架之间自由切换采样策略：
+
+1. 确定性采样：
+   - DDIM：使用预测的噪声进行确定性更新
+   - Flow Matching：使用预测的向量场进行 ODE 求解
+
+2. 随机采样：
+   - DDPM：在每一步添加随机噪声
+   - Flow Matching：通过扰动向量场实现随机采样
+
+这种统一视角不仅帮助我们理解这两个框架，还启发了新的混合采样策略的可能性。
 
 ## 3. 理论基础
 ### 3.1 DDPM 原理
