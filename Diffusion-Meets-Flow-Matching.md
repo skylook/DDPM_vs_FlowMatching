@@ -2,17 +2,17 @@
 
 ## 引言
 
-Flow Matching 和 Diffusion models 是生成模型领域的两个重要框架。尽管它们看起来很相似，但社区中对它们之间的具体联系仍存在一些困惑。本文旨在厘清这种困惑，并展示一个重要发现：**diffusion models 和 Gaussian flow matching 本质上是等价的**，只是不同的模型设定会导致不同的网络输出和采样方案。这个发现意味着我们可以交替使用这两个框架。
+Flow Matching 和 Diffusion models 是生成模型领域的两个重要框架。尽管它们看起来很相似，但社区中对它们之间的具体联系仍存在一些困惑。本文旨在厘清这种困惑，并展示一个重要发现：**Diffusion models 和 Gaussian Flow Matching 本质上是等价的**，只是不同的模型设定会导致不同的网络输出和采样方案。这个发现意味着我们可以交替使用这两个框架。
 
-近期，Flow matching 因其简单的理论基础和"直线"采样轨迹而受到广泛关注。这引发了一个常见问题：
+近期，Flow Matching 因其简单的理论基础和 "直线" 采样轨迹而受到广泛关注。这引发了一个常见问题：
 
-> "究竟是 diffusion 更好，还是 flow matching 更好？"
+> "究竟是 Diffusion 更好，还是 Flow Matching 更好？"
 
-正如我们将要展示的，对于常见的特殊情况（即 flow matching 中使用高斯分布作为源分布时），diffusion models 和 flow matching 是**等价的**，所以这个问题并没有唯一答案。具体来说，我们将展示如何在这两种方法之间进行转换。
+正如我们将要展示的，对于常见的特殊情况（即 Flow Matching 中使用高斯分布作为源分布时），Diffusion Models 和 Flow Matching 是 **等价的**，所以这个问题并没有唯一答案。具体来说，我们将展示如何在这两种方法之间进行转换。
 
-这种等价性为什么重要？因为它允许我们混合使用这两个框架中开发的技术。例如，在训练 flow matching 模型后，我们可以使用随机或确定性的采样方法（这与人们普遍认为 flow matching 总是确定性的观点相反）。
+这种等价性为什么重要？因为它允许我们混合使用这两个框架中开发的技术。例如，在训练 Flow Matching 模型后，我们可以使用随机或确定性的采样方法（这与人们普遍认为 Flow Matching 总是确定性的观点相反）。
 
-本文将重点关注最常用的 flow matching 形式，即基于最优传输路径的方法，它与 rectified flow 和 stochastic interpolants 密切相关。我们的目的不是推荐使用其中某一种方法（两种框架都很有价值，它们源于不同的理论视角，而且它们在实践中能得到相同的算法更令人鼓舞），而是帮助实践者理解并自信地交替使用这些框架。
+本文将重点关注最常用的 Flow Matching 形式，即基于最优传输路径的方法，它与 Rectified Flow 和 Stochastic Interpolants 密切相关。我们的目的不是推荐使用其中某一种方法（两种框架都很有价值，它们源于不同的理论视角，而且它们在实践中能得到相同的算法更令人鼓舞），而是帮助实践者理解并自信地交替使用这些框架。
 
 ## 1. 概述
 
@@ -20,15 +20,15 @@ Flow Matching 和 Diffusion models 是生成模型领域的两个重要框架。
 
 ### 1.1 Diffusion Models 基础
 
-diffusion 过程通过向观测数据点 $\mathbf{x}$ 逐步添加高斯噪声来构建扩散过程。在时间 $t$ 时的带噪声数据由前向过程给出：
+Diffusion 过程通过向观测数据点 $\mathbf{x}$ 逐步添加高斯噪声来构建扩散过程。在时间 $t$ 时的带噪声数据由前向过程给出：
 
 $$\mathbf{z}_t = \alpha_t \mathbf{x} + \sigma_t \boldsymbol{\epsilon}, \quad \text{其中} \quad \boldsymbol{\epsilon} \sim \mathcal{N}(0, \mathbf{I}) \tag{1}$$
 
-这里 $\alpha_t$ 和 $\sigma_t$ 定义了**噪声调度**。如果满足 $\alpha_t^2 + \sigma_t^2 = 1$，则称该噪声调度为方差保持的。噪声调度的设计使得 $\mathbf{z}_0$ 接近原始数据，而 $\mathbf{z}_1$ 接近标准高斯分布。
+这里 $\alpha_t$ 和 $\sigma_t$ 定义了**噪声调度**（Noice Schedule）。如果满足 $\alpha_t^2 + \sigma_t^2 = 1$，则称该噪声调度为方差保持的。噪声调度的设计使得 $\mathbf{z}_0$ 接近原始数据，而 $\mathbf{z}_1$ 接近标准高斯分布。
 
 ### 1.2 Flow Matching 基础
 
-在 flow matching 中，我们将前向过程视为数据 $\mathbf{x}$ 和噪声项 $\boldsymbol{\epsilon}$ 之间的线性插值：
+在 Flow Matching 中，我们将前向过程视为数据 $\mathbf{x}$ 和噪声项 $\boldsymbol{\epsilon}$ 之间的线性插值：
 
 $$\mathbf{z}_t = (1-t)\mathbf{x} + t\boldsymbol{\epsilon} \tag{2}$$
 
@@ -83,7 +83,7 @@ $$\mathcal{L}_{\text{DDPM}} = \mathbb{E}_{t,\mathbf{x},\boldsymbol{\epsilon}}\le
 
 ### Flow Matching 的训练目标
 
-Flow Matching 的目标是学习一个向量场（velocity field），其损失函数为：
+Flow Matching 的目标是学习一个向量场（Velocity Field），其损失函数为：
 
 $$\mathcal{L}_{\text{FM}} = \mathbb{E}_{t,\mathbf{x},\boldsymbol{\epsilon}}\left[\|\mathbf{u} - \hat{\mathbf{v}}_\theta(\mathbf{z}_t, t)\|^2\right] \tag{7}$$
 
