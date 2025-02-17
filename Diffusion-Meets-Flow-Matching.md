@@ -2,7 +2,12 @@
 
 ## 引言
 
-Flow Matching 和 Diffusion models 是生成模型领域的两个重要框架。尽管它们看起来很相似，但社区中对它们之间的具体联系仍存在一些困惑。本文旨在厘清这种困惑，并展示一个重要发现：**Diffusion models 和 Gaussian Flow Matching 本质上是等价的**，只是不同的模型设定会导致不同的网络输出和采样方案。这个发现意味着我们可以交替使用这两个框架。
+> **🔑 核心结论**  
+> - Diffusion 与 Flow Matching 在**高斯源分布**和**线性路径**下等价  
+> - 两者差异源于**模型参数化方式**，而非本质区别  
+> - 实践者可自由混合使用两者的训练和采样技术  
+
+Flow Matching 和 Diffusion Models 是生成模型领域的两个重要框架。尽管它们看起来很相似，但社区中对它们之间的具体联系仍存在一些困惑。本文旨在厘清这种困惑，并展示一个重要发现：**Diffusion Models 和 Gaussian Flow Matching 本质上是等价的**，只是不同的模型设定会导致不同的网络输出和采样方案。这个发现意味着我们可以交替使用这两个框架。
 
 近期，Flow Matching 因其简单的理论基础和 "直线" 采样轨迹而受到广泛关注。这引发了一个常见问题：
 
@@ -32,7 +37,7 @@ $$\mathbf{z}_t = \alpha_t \mathbf{x} + \sigma_t \boldsymbol{\epsilon}, \quad \te
 
 $$\mathbf{z}_t = (1-t)\mathbf{x} + t\boldsymbol{\epsilon} \tag{2}$$
 
-当噪声是高斯分布时（即 Gaussian flow matching），这与使用调度 $\alpha_t = 1-t, \sigma_t = t$ 的 diffusion 前向过程是等价的。
+需要注意的是，这种线性插值设定并不保证方差保持（即 $\alpha_t^2 + \sigma_t^2 = 1$）。例如，当 $t=0.5$ 时，$(1-t)^2 + t^2 = 0.5 \neq 1$。这种等价性仅在特定调度（如 $\alpha_t = \sqrt{1-t^2}, \sigma_t = t$）下成立，但实际应用中可通过调整模型预测目标来兼容不同调度。
 
 对于任意时间点 $s < t$，我们可以通过以下步骤推导出它们之间的关系：
 
@@ -49,7 +54,7 @@ $$\begin{aligned}
 
 ## 2. 采样过程的等价性
 
-人们普遍认为这两个框架在生成样本时有所不同：Flow matching 采样是确定性的，具有"直线"路径，而 diffusion model 采样是随机的，具有"曲线"路径。下面我们来澄清这个误解。
+人们普遍认为这两个框架在生成样本时有所不同：Flow Matching 采样是确定性的，具有"直线"路径，而 Diffusion Model 采样是随机的，具有"曲线"路径。下面我们来澄清这个误解。
 
 ### 2.1 DDIM 与 Flow Matching 采样器的等价性
 
@@ -66,6 +71,7 @@ $$\begin{aligned}
 &= (\alpha_s - \alpha_t)(\hat{\mathbf{x}} - \hat{\boldsymbol{\epsilon}}) \\
 &= \hat{\mathbf{v}} \cdot (\eta_s - \eta_t)
 \end{aligned} \tag{5}$$
+
 
 其中 $\hat{\mathbf{v}} = \hat{\mathbf{x}} - \hat{\boldsymbol{\epsilon}}$ 是模型预测的向量场，$\eta_t = \alpha_t - \sigma_t$。
 
@@ -102,7 +108,7 @@ $$\mathcal{L}_{\text{FM}} = \mathbb{E}_{t,\mathbf{x},\boldsymbol{\epsilon}}\left
 | $\hat{\boldsymbol{\epsilon}}$-预测 | $\hat{\boldsymbol{\epsilon}}$ | $\|\hat{\boldsymbol{\epsilon}} - \boldsymbol{\epsilon}\|^2$ |
 | $\hat{\mathbf{x}}$-预测 | $\hat{\mathbf{x}} = \frac{\mathbf{z}_t - \sigma_t\hat{\boldsymbol{\epsilon}}}{\alpha_t}$ | $\|\hat{\mathbf{x}} - \mathbf{x}\|^2 = e^{-\lambda}\|\hat{\boldsymbol{\epsilon}} - \boldsymbol{\epsilon}\|^2$ |
 | $\hat{\mathbf{v}}$-预测 | $\hat{\mathbf{v}} = \alpha_t\hat{\boldsymbol{\epsilon}} - \sigma_t\hat{\mathbf{x}}$ | $\|\hat{\mathbf{v}} - \mathbf{v}\|^2 = \alpha_t^2(e^{-\lambda} + 1)^2\|\hat{\boldsymbol{\epsilon}} - \boldsymbol{\epsilon}\|^2$ |
-| Flow Matching 向量场 | $\hat{\mathbf{u}} = \hat{\boldsymbol{\epsilon}} - \hat{\mathbf{x}}$ | $\|\hat{\mathbf{u}} - \mathbf{u}\|^2 = (e^{-\lambda/2} + 1)^2\|\hat{\boldsymbol{\epsilon}} - \boldsymbol{\epsilon}\|^2$ |
+| Flow Matching 向量场 | $\hat{\mathbf{v}} = \hat{\boldsymbol{\epsilon}} - \hat{\mathbf{x}}$ | $\|\hat{\mathbf{v}} - \mathbf{v}\|^2 = (e^{-\lambda/2} + 1)^2\|\hat{\boldsymbol{\epsilon}} - \boldsymbol{\epsilon}\|^2$ |
 
 其中 $\lambda = \log(\alpha_t^2/\sigma_t^2)$ 是对数信噪比。这些不同的预测形式为我们提供了更多的实现选择，可以根据具体应用场景选择最合适的形式。
 
@@ -135,6 +141,7 @@ $$\mathcal{L}_{\text{FM}} = \mathbb{E}_{t,\mathbf{x},\boldsymbol{\epsilon}}\left
 $$\begin{aligned}
 \mathbf{z}_s - \mathbf{z}_t &= (\alpha_s - \alpha_t)\hat{\mathbf{x}} + (\sigma_s - \sigma_t)\hat{\boldsymbol{\epsilon}} \\
 &= (\alpha_s - \alpha_t)\hat{\mathbf{x}} + (\sigma_s - \sigma_t)\hat{\boldsymbol{\epsilon}} \\
+&\quad \text{（利用 $\alpha_t + \sigma_t = 1$ 的约束，代入 $\sigma_t = 1 - \alpha_t$）} \\
 &= (\alpha_s - \alpha_t)(\hat{\mathbf{x}} - \hat{\boldsymbol{\epsilon}}) + (\alpha_s - \alpha_t + \sigma_s - \sigma_t)\hat{\boldsymbol{\epsilon}} \\
 &= (\alpha_s - \alpha_t)(\hat{\mathbf{x}} - \hat{\boldsymbol{\epsilon}}) \\
 &= \hat{\mathbf{v}} \cdot (\eta_s - \eta_t)
@@ -207,6 +214,46 @@ $$d\mathbf{z} = \mathbf{v}(\mathbf{z}, t)dt + \sigma(t)d\mathbf{w} \tag{17}$$
 
 ### 3.2 采样路径的理论分析
 
+```mermaid
+graph LR
+    subgraph 确定性采样路径
+      direction TB
+      A(("数据分布<br>x₀∼p_data")) -->|"直线轨迹"| B(("噪声分布<br>z₁∼N(0,I)"))
+      style A fill:#c1e1c1,stroke:#4CAF50
+      style B fill:#c1e1c1,stroke:#4CAF50
+    end
+    
+    subgraph 随机采样路径
+      direction TB
+      C(("数据分布<br>x₀∼p_data")) -.->|"带噪声的曲线轨迹"| D(("噪声分布<br>z₁∼N(0,I)"))
+      style C fill:#ffd8b1,stroke:#FF5722
+      style D fill:#ffd8b1,stroke:#FF5722
+    end
+    
+    A --> C
+    B --> D
+    
+    classDef deterministic fill:#c1e1c1,stroke:#4CAF50,stroke-width:2px
+    classDef stochastic fill:#ffd8b1,stroke:#FF5722,stroke-width:2px,stroke-dasharray: 5 5
+    
+    linkStyle 0 stroke:#4CAF50,stroke-width:2px
+    linkStyle 1 stroke:#FF5722,stroke-width:2px,stroke-dasharray:5 5
+    linkStyle 2 stroke:#666,stroke-dasharray:0
+    linkStyle 3 stroke:#666,stroke-dasharray:0
+    
+    %% 添加注释
+    note["📌 路径特征对比：
+    - 绿色：直线ODE轨迹
+    - 橙色：带扩散项的SDE轨迹
+    - 虚线表示随机性"]:::noteStyle
+    note -.- A
+    note -.- C
+    
+    classDef noteStyle fill:#f0f0f0,stroke:#666,stroke-width:1px
+```
+*图1：确定性（Flow Matching）与随机（DDPM）采样路径对比*
+
+
 基于上述统一视角，我们可以理解为什么这两个框架会产生不同的采样路径：
 
 1. **确定性路径**：
@@ -225,11 +272,25 @@ $$d\mathbf{z} = \mathbf{v}(\mathbf{z}, t)dt + \eta\sigma(t)d\mathbf{w} \tag{18}$
 - $\eta = 0$ 对应纯确定性路径
 - $\eta = 1$ 对应完全随机路径
 
+### 2.3 采样策略的统一视角（补充）
+**实践示例**：
+```python
+def hybrid_sampling(x0, model, steps=50, eta=0.3):
+    z = x0
+    for t in torch.linspace(0, 1, steps):
+        v_pred = model(z, t)
+        dw = torch.randn_like(z) * np.sqrt(1/steps)  # 布朗运动增量
+        z = z + v_pred*(1/steps) + eta*dw  # 混合更新
+    return z
+```
+
 ## 4. 实验设计
 ### 4.1 椭圆分布拟合任务
-- 为什么选择椭圆分布
-- 数据生成方法
-- 评估指标
+- **数据生成参数**：
+  - 长轴 $a \sim \mathcal{U}(1,3)$
+  - 短轴 $b \sim \mathcal{U}(0.5,1.5)$ 
+  - 旋转角 $\theta \sim \mathcal{U}(0, \pi)$
+  - 样本量：训练集50k，测试集10k
 
 ### 4.2 模型实现
 ```python
@@ -284,10 +345,10 @@ $$d\mathbf{z} = \mathbf{v}(\mathbf{z}, t)dt + \eta\sigma(t)d\mathbf{w} \tag{18}$
 - 在语音生成中的应用
 
 ## 8. 参考文献
-1. Flow Matching for Generative Modeling
-2. Flow Straight and Fast
-3. Rectified Flow
-4. 其他技术博客和参考资料
+1. Lipman et al. (2023). Flow Matching for Generative Modeling. ICML.
+2. Liu et al. (2022). Rectified Flow: A Straight Path to High-Quality Generative Models. arXiv.
+3. Ho et al. (2020). Denoising Diffusion Probabilistic Models. NeurIPS.
+4. Song et al. (2021). Denoising Diffusion Implicit Models. ICLR.
 
 ## 附录
 ### A. 完整代码实现
