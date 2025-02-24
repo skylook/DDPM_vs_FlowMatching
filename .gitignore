@@ -5,3 +5,9 @@ flow_matching_samples/
 flow_matching_trajectories/
 ddpm_loss.png
 flow_matching_loss.png
+doc/
+figures/intro_euler_method.html
+figures/intro_euler_method_files/MathJax.js
+figures/intro_euler_method_files/plotly-2.35.2.min.js
+assets/20250219_153151_fig-1.png
+assets/20250219_161309_fig-2.png
