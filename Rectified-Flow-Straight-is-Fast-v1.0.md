@@ -9,9 +9,7 @@ Rectified Flow 通过将一个平滑连接噪声与数据的插值过程"因果�
 
 ## 概述
 
-
 ![](assets/20250310_112636_reflow-example.jpg)
-
 
 Rectified Flow，一个"简简单单走直线“生成模型，是我们对这些挑战的一个回答：极度简单，一步生成。我们的方法有以下要点：
 
@@ -22,7 +20,6 @@ Rectified Flow，一个"简简单单走直线“生成模型，是我们对这�
 （3）通常的扩散模型是把高斯白噪声转换成想要的数据(比如图片)。我们的方法可以把任何一种数据或噪声(比如猫脸照片)转换成另外一种数据(比如人脸照片)。所以我们的方法不仅可以做生成模型，还可以应用于很多更广泛的迁移学习 (比如domain transfer）任务上。
 
 ## 问题定义：学习流生成模型
-
 
 ![](assets/20250310_142701_problem-define-ot.jpg)
 
@@ -35,7 +32,7 @@ Rectified Flow，一个"简简单单走直线“生成模型，是我们对这�
 生成建模可以被表述为寻找一种计算过程，将一个噪声分布（记作 $\pi_0$）转化为一个通过数据观察到的未知数据分布 $\pi_1$。在流模型中，这个过程由常微分方程 (ODE) 表示：
 
 $$
-\dot{Z}_t = v_t(Z_t), \quad \forall t \in [0,1], \quad \text{start with } Z_0 \sim \pi_0 \tag{1}
+\dot{Z}_t = v_t(Z_t), \quad \forall t \in [0,1], \quad \text{starting from } Z_0 \sim \pi_0 \tag{1}
 
 $$
 
@@ -138,7 +135,7 @@ Rectified Flow 的构造方法如下：
   通过上述构造，插值过程 $\{X_t\}$ 的端点 $X_0$ 和 $X_1$ 自然匹配目标分布 $\pi_0$ 与 $\pi_1$。但是，$\{X_t\}$ 并不是一个 **因果** 的 ODE 过程（比如 $\dot{Z}_t = v_t(Z_t)$），后者是通过从 $Z_0$ 随时间前进生成 $Z_1$。生成 $X_t$ 则需要同时依赖 $X_0$ 和 $X_1$，而非仅从 $X_0$ 随 $t$ 增加而演化。
 * **速度场估计：**
 
-  为了将插值过程转换为 ODE 流，我们需要学习一个速度场 $v_t$，使得它能近似 $X_t$ 的时间导数 $\dot{X}_t$。为此，我们求解如下优化问题：
+  为了将插值过程转换为 ODE 流，我们需要使用神经网络学习一个速度场 $v_t$ ，使得它能近似 $X_t$ 的时间导数 $\dot{X}_t$。为此，我们求解如下优化问题：
 
   $$
   \min_v \int_0^1 \mathbb{E}\Bigl[\|\dot{X}_t - v(X_t,t)\|^2\Bigr] dt.
@@ -150,7 +147,7 @@ Rectified Flow 的构造方法如下：
   > **符号说明。** 一个随机过程 $X_t = X(t,\omega)$ 是关于时间 $t$ 及随机种子 $\omega$ 的可测函数（随机种子的分布记作 $\mathbb{P}$）。在这里，端点 $(X_0,X_1)$ 就构成了随机种子；而 $\dot{X}_t = \partial_t X(t,\omega)$ 是关于 $t$ 的偏导数，同样依赖于同一随机种子。通常我们在书写时会省略随机种子的符号。
   >
 
-  这一优化问题的最优解为条件均值（我们需要证明的部分）：
+  这一优化问题的<font color='red'>最优解为条件均值</font>（我们需要证明的部分）：
 
   $$
   v_t^*(x) = \mathbb{E}\bigl[\dot{X}_t \mid X_t = x\bigr].
@@ -163,40 +160,40 @@ Rectified Flow 的构造方法如下：
 
 让我用更规范的 LaTeX 格式重新解释这个证明：
 
-### 证明 \[v_t^*(x) = \mathbb {E}[\dot {X}_t|X_t=x]\] 是优化问题的解
+### 证明 $v_t^*(x) = \mathbb {E}[\dot {X}_t|X_t=x]$ 是优化问题的解
 
 原优化问题：
-\[\min_v \int_0^1 \mathbb{E}[\|\dot{X}_t - v_t(X_t)\|^2]dt\]
+$$\min_v \int_0^1 \mathbb{E}[\|\dot{X}_t - v_t(X_t)\|^2]dt$$
 
 ### 证明步骤
 
 1) 由于积分是在时间维度上的，我们可以对每个时间点 t 分别求最小值：
-   \[\min_v \mathbb{E}[\|\dot{X}_t - v_t(X_t)\|^2]\]
-2) 令 \[v_t^*(x) = \mathbb{E}[\dot{X}_t|X_t=x]\]，定义偏差函数：
-   \[h(x) = v_t(x) - v_t^*(x)\]
+   $$\min_v \mathbb{E}[\|\dot{X}_t - v_t(X_t)\|^2]$$
+2) 令 $v_t^*(x) = \mathbb{E}[\dot{X}_t|X_t=x]$，定义偏差函数：
+   $$h(x) = v_t(x) - v_t^*(x)$$
 3) 展开均方误差：
-   \[\begin{aligned}
+   $$\begin{aligned}
    \mathbb{E}[\|\dot{X}_t - v_t(X_t)\|^2] &= \mathbb{E}[\|\dot{X}_t - v_t^*(X_t) + v_t^*(X_t) - v_t(X_t)\|^2] \\
    &= \mathbb{E}[\|\dot{X}_t - v_t^*(X_t)\|^2] + \mathbb{E}[\|h(X_t)\|^2] + 2\mathbb{E}[(\dot{X}_t - v_t^*(X_t))^T h(X_t)]
-   \end{aligned}\]
+   \end{aligned}$$
 4) 考虑交叉项：
 
-   - 由条件期望定义：\[\mathbb{E}[\dot{X}_t - v_t^*(X_t)|X_t] = 0\]
-   - 因此：\[\mathbb{E}[(\dot{X}_t - v_t^*(X_t))^T h(X_t)] = 0\]
+   - 由条件期望定义：$$\mathbb{E}[\dot{X}_t - v_t^*(X_t)|X_t] = 0$$
+   - 因此：$$\mathbb{E}[(\dot{X}_t - v_t^*(X_t))^T h(X_t)] = 0$$
 5) 整理得到：
-   \[\mathbb{E}[\|\dot{X}_t - v_t(X_t)\|^2] = \mathbb{E}[\|\dot{X}_t - v_t^*(X_t)\|^2] + \mathbb{E}[\|h(X_t)\|^2]\]
-6) 由于 \[\mathbb{E}[\|h(X_t)\|^2] \geq 0\]，且当且仅当 \[h(x) = 0\] 时取等号，即：
-   \[v_t(x) = v_t^*(x) = \mathbb{E}[\dot{X}_t|X_t=x]\]
-7) 因此，\[v_t^*(x) = \mathbb{E}[\dot{X}_t|X_t=x]\] 是优化问题的最优解。
+   $$\mathbb{E}[\|\dot{X}_t - v_t(X_t)\|^2] = \mathbb{E}[\|\dot{X}_t - v_t^*(X_t)\|^2] + \mathbb{E}[\|h(X_t)\|^2]$$
+6) 由于 $$\mathbb{E}[\|h(X_t)\|^2] \geq 0$$，且当且仅当 $h(x) = 0$ 时取等号，即：
+   $$v_t(x) = v_t^*(x) = \mathbb{E}[\dot{X}_t|X_t=x]$$
+7) 因此，$v_t^*(x) = \mathbb{E}[\dot{X}_t|X_t=x]$ 是优化问题的最优解。
 
 ### 直观理解
 
-- 在每个空间点 x，速度场 \[v_t(x)\] 需要最小化与所有经过该点轨迹实际速度 \[\dot{X}_t\] 的均方差
-- 条件期望 \[\mathbb{E}[\dot{X}_t|X_t=x]\] 正是最小化均方差的最优选择
+- 在每个空间点 x，速度场 $v_t(x)$ 需要最小化与所有经过该点轨迹实际速度 $\dot{X}_t$ 的均方差
+- 条件期望 $\mathbb{E}[\dot{X}_t|X_t=x]$ 正是最小化均方差的最优选择
 - 这相当于在每个点选择一个最能代表所有可能运动方向的"平均方向"
 - 任何偏离这个条件期望的选择都会导致更大的均方误差
 
-这就是为什么条件期望 \[\mathbb{E}[\dot{X}_t|X_t=x]\] 是最优解。
+这就是为什么条件期望 $\mathbb{E}[\dot{X}_t|X_t=x]$ 是最优解。
 
 ---
 
@@ -317,7 +314,6 @@ $$
 \int h\nabla \cdot (v^X_t \pi_t) = -\int \nabla h^T(v^X_t \pi_t)
 
 $$
-
 
 因为 $Z_t$ 由相同的速度场 $v^X$ 驱动，其边缘分布 $Law(Z_t)$ 求解相同的方程且具有相同的初始条件($Z_0 = X_0$)。因此，如果方程(11)的解是唯一的，$Law(Z_t)$ 和 $Law(X_t)$ 的等价性就成立了。而(11)解的唯一性等价于 $dZ_t = v^X(Z_t,t)dt$ 解的唯一性，这可以由 Kurtz [37] 的推论 1.3 得到（另见 Ambrosio 和 Crippa [1] 的定理 4.1）。
 
