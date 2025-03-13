@@ -1,6 +1,6 @@
 Rectified Flow 通过将一个平滑连接噪声与数据的插值过程"因果化"（或称为校正）来学习常微分方程 (ODE) 生成模型。该过程自然倾向于产生更直的轨迹，从而使得快速的欧拉离散化成为可能，并且这一过程可以重复进行，以进一步提高轨迹的直性。
 
-## 目录
+### 目录
 
 - 概述
 - 问题：学习流生成模型
@@ -64,54 +64,54 @@ $$
 
 > **耦合（Coupling）的数学定义与作用**
 > 在概率论中，两个分布 $ \pi_0 $ 和 $ \pi_1 $ 的**耦合**是指它们的联合概率分布 $ \gamma(x_0, x_1) $，满足：
-> 
+>
 > $$
 > \int \gamma(x_0, x_1) dx_1 = \pi_0(x_0), \quad \int \gamma(x_0, x_1) dx_0 = \pi_1(x_1)
-
+>
 > $$
-> 
+>
 > 即边缘分布分别为 $ \pi_0 $ 和 $ \pi_1 $。
-> 
+>
 > **在 Rectified Flow 中的意义**
-> 
+>
 > 1. **轨迹构造基础**
 >    耦合 $(X_0, X_1) \sim \gamma$ 定义了噪声样本 $X_0 \sim \pi_0$ 与数据样本 $X_1 \sim \pi_1$ 的配对关系，进而通过插值生成中间轨迹：
->    
+>
 >    $$
 >    X_t = t X_1 + (1-t) X_0
-
+>
 >    $$
-> 
 > 2. **影响ODE直线性**
 >    不同的耦合会导致不同的插值轨迹形态：
->    
+>
 >    - **独立耦合**：$X_0$ 与 $X_1$ 独立采样（$\gamma = \pi_0 \times \pi_1$），轨迹易交叉（图2a）
 >    - **直线耦合**：存在双射 $X_1 = F(X_0) $，使得所有轨迹为直线（理想情况）
-> 
+>
 > **关键耦合类型对比**
-> 
-> | 耦合类型            | 数学形式                          | 轨迹特性      | 生成效率     |
-> | --------------- | ----------------------------- | --------- | -------- |
-> | **独立耦合**        | $\gamma = \pi_0 \times \pi_1$ | 多交叉，曲率大   | 低（需多步采样） |
-> | **Straight耦合**  | $X_1 = X_0 + v(X_0)$          | 无交叉，完全直线  | 高（单步生成）  |
-> | **Rectified耦合** | 通过Reflow迭代优化                  | 渐进直化，交叉减少 | 逐步提升     |
-> 
+>
+>
+> | 耦合类型          | 数学形式                      | 轨迹特性           | 生成效率         |
+> | ------------------- | ------------------------------- | -------------------- | ------------------ |
+> | **独立耦合**      | $\gamma = \pi_0 \times \pi_1$ | 多交叉，曲率大     | 低（需多步采样） |
+> | **Straight耦合**  | $X_1 = X_0 + v(X_0)$          | 无交叉，完全直线   | 高（单步生成）   |
+> | **Rectified耦合** | 通过Reflow迭代优化            | 渐进直化，交叉减少 | 逐步提升         |
+>
 > **耦合优化的核心思想**
 > Rectified Flow通过以下步骤优化耦合：
-> 
+>
 > 1. **初始独立耦合**：从独立样本对 \( (X_0, X_1) \) 开始
 > 2. **校正速度场**：学习 \( v_t^*(x) = \mathbb{E}[X_1 - X_0 \mid X_t = x] \)
 > 3. **生成新耦合**：通过ODE \( \dot{Z}_t = v_t^*(Z_t) \) 得到 \( (Z_0, Z_1) \)
 > 4. **迭代直化**：将 \( (Z_0, Z_1) \) 作为新耦合输入Reflow过程
-> 
+>
 > **示例**：
 > 若初始耦合为独立分布，经过一次 Rectify 后，新耦合 $(Z_0, Z_1)$ 满足：
-> 
+>
 > $$
 > Z_1 = Z_0 + \int_0^1 v_t^*(Z_t) dt
-
+>
 > $$
-> 
+>
 > 这种耦合的直线性显著优于初始独立耦合。
 
 ## Rectified Flow
@@ -121,35 +121,34 @@ $$
 Rectified Flow 的构造方法如下：
 
 * **构建插值：**
-  
+
   首先，构建一个插值过程 $\{X_t\} = \{X_t: t \in [0,1]\}$，在 $X_0$ 与 $X_1$ 之间平滑过渡。虽然可以选择其它插值方式，但这里我们采用典型的直线插值：
-  
+
   $$
   X_t = t\,X_1 + (1-t)\,X_0
 
   $$
-  
+
   这种插值过程 $\{X_t\}$ 是通过 **"锚定-桥接"** 方式生成的：首先采样端点 $X_0$ 与 $X_1$，然后生成连接这两者的中间轨迹。
-
 * **边际匹配：**
-  
-  通过上述构造，插值过程 $\{X_t\}$ 的端点 $X_0$ 和 $X_1$ 自然匹配目标分布 $\pi_0$ 与 $\pi_1$。但是，$\{X_t\}$ 并不是一个 **因果** 的 ODE 过程（比如 $\dot{Z}_t = v_t(Z_t)$），后者是通过从 $Z_0$ 随时间前进生成 $Z_1$。生成 $X_t$ 则需要同时依赖 $X_0$ 和 $X_1$，而非仅从 $X_0$ 随 $t$ 增加而演化。
 
+  通过上述构造，插值过程 $\{X_t\}$ 的端点 $X_0$ 和 $X_1$ 自然匹配目标分布 $\pi_0$ 与 $\pi_1$。但是，$\{X_t\}$ 并不是一个 **因果** 的 ODE 过程（比如 $\dot{Z}_t = v_t(Z_t)$），后者是通过从 $Z_0$ 随时间前进生成 $Z_1$。生成 $X_t$ 则需要同时依赖 $X_0$ 和 $X_1$，而非仅从 $X_0$ 随 $t$ 增加而演化。
 * **速度场估计：**
-  
+
   为了将插值过程转换为 ODE 流，我们需要使用神经网络学习一个速度场 $v_t$ ，使得它能近似 $X_t$ 的时间导数 $\dot{X}_t$。为此，我们求解如下优化问题：
-  
+
   $$
   \min_v \int_0^1 \mathbb{E}\Bigl[\|\dot{X}_t - v(X_t,t)\|^2\Bigr] dt.
 
   $$
-  
+
   其中 $v$ 通常使用深度神经网络（参数为 $\theta$ ）进行参数化，因此在后面证明时我们会标记为 $v_{\theta}$，期望项关于插值轨迹取样。
-  
+
   > **符号说明。** 一个随机过程 $X_t = X(t,\omega)$ 是关于时间 $t$ 及随机种子 $\omega$ 的可测函数（随机种子的分布记作 $\mathbb{P}$）。在这里，端点 $(X_0,X_1)$ 就构成了随机种子；而 $\dot{X}_t = \partial_t X(t,\omega)$ 是关于 $t$ 的偏导数，同样依赖于同一随机种子。通常我们在书写时会省略随机种子的符号。
-  
-  这一优化问题的最优解为条件均值（我们需要证明的部分）：
-  
+  >
+
+  这一优化问题的<font color='red'>最优解为条件均值</font>（我们需要证明的部分）：
+
   $$
   v_t^*(x) = \mathbb{E}\bigl[\dot{X}_t \mid X_t = x\bigr].
 
@@ -157,9 +156,37 @@ Rectified Flow 的构造方法如下：
 
 ---
 
-### 直观理解（后文补充证明）
+## 补充证明
 
-- 在每个空间点 $x$，速度场 $v_t(x)$ 需要最小化与所有经过该点轨迹实际速度 $\dot{X}_t$ 的均方差
+### 证明 $v_t^*(x) = \mathbb {E}[\dot {X}_t|X_t=x]$ 是优化问题的解
+
+原优化问题：
+$$\min_v \int_0^1 \mathbb{E}[\|\dot{X}_t - v_t(X_t)\|^2]dt$$
+
+### 证明步骤
+
+1) 由于积分是在时间维度上的，我们可以对每个时间点 t 分别求最小值：
+   $$\min_v \mathbb{E}[\|\dot{X}_t - v_t(X_t)\|^2]$$
+2) 令 $v_t^*(x) = \mathbb{E}[\dot{X}_t|X_t=x]$，定义偏差函数：
+   $$h(x) = v_t(x) - v_t^*(x)$$
+3) 展开均方误差：
+   $$\begin{aligned}
+   \mathbb{E}[\|\dot{X}_t - v_t(X_t)\|^2] &= \mathbb{E}[\|\dot{X}_t - v_t^*(X_t) + v_t^*(X_t) - v_t(X_t)\|^2] \\
+   &= \mathbb{E}[\|\dot{X}_t - v_t^*(X_t)\|^2] + \mathbb{E}[\|h(X_t)\|^2] + 2\mathbb{E}[(\dot{X}_t - v_t^*(X_t))^T h(X_t)]
+   \end{aligned}$$
+4) 考虑交叉项：
+
+   - 由条件期望定义：$$\mathbb{E}[\dot{X}_t - v_t^*(X_t)|X_t] = 0$$
+   - 因此：$$\mathbb{E}[(\dot{X}_t - v_t^*(X_t))^T h(X_t)] = 0$$
+5) 整理得到：
+   $$\mathbb{E}[\|\dot{X}_t - v_t(X_t)\|^2] = \mathbb{E}[\|\dot{X}_t - v_t^*(X_t)\|^2] + \mathbb{E}[\|h(X_t)\|^2]$$
+6) 由于 $$\mathbb{E}[\|h(X_t)\|^2] \geq 0$$，且当且仅当 $h(x) = 0$ 时取等号，即：
+   $$v_t(x) = v_t^*(x) = \mathbb{E}[\dot{X}_t|X_t=x]$$
+7) 因此，$v_t^*(x) = \mathbb{E}[\dot{X}_t|X_t=x]$ 是优化问题的最优解。
+
+### 直观理解
+
+- 在每个空间点 x，速度场 $v_t(x)$ 需要最小化与所有经过该点轨迹实际速度 $\dot{X}_t$ 的均方差
 - 条件期望 $\mathbb{E}[\dot{X}_t|X_t=x]$ 正是最小化均方差的最优选择
 - 这相当于在每个点选择一个最能代表所有可能运动方向的"平均方向"
 - 任何偏离这个条件期望的选择都会导致更大的均方误差
@@ -189,17 +216,17 @@ $$
 - 由于 ODE 轨迹 $\{Z_t\}$ 不能相交，它们必须在潜在的交叉点处弯曲，以"重连"原始插值路径并避免交叉。
 
 > **Rectified Flow.** 对于任一可微随机过程 $\{X_t\} = \{X_t:t\in[0,1]\}$，我们将下式定义的 ODE 过程
-> 
+>
 > $$
 > \dot{Z}_t = v_t^*(Z_t) \quad \text{with} \quad v_t^*(x) = \mathbb{E} \left[ \dot{X}_t \mid X_t = x \right], \quad Z_0 = X_0
-
+>
 > $$
+>
 > 称为由 $\{X_t\}$ 诱导出的 **Rectified Flow**。我们记为：
-
+>
 > $$
-> 
 > \{Z_t\} = \texttt{Rectify}(\{X_t\}).
-
+>
 > $$
 
 ![](figures/flow_static.png)
@@ -230,6 +257,87 @@ $$
 
 这种平滑化效应在整个空间中都在发生，不仅仅是在交叉点处。在任何给定点，速度场都是所有经过该点的插值轨迹速度的平均值。这种全局平均化导致了更平滑、更直的轨迹。
 
+### 3.1 边缘分布保持性质
+
+边缘分布保持性质指的是：对于 $\forall t$，$Law(Z_t) = Law(X_t)$ 是非线性整流流在(6)中的一般性质，无论插值过程 $X_t$ 是否为直线 [3]。
+
+**定义 3.1** 对于一个路径连续可微的随机过程 $X = \{X_t : t \in [0,1]\}$，其期望速度 $v^X$ 定义为：
+
+$$
+v^X(x,t) = \mathbb{E}[\dot{X_t}|X_t = x], \quad \forall x \in supp(X_t)
+
+$$
+
+对于 $x \notin supp(X_t)$，条件期望未定义，我们任意设定 $v^X(x,t) = 0$。
+
+**定义 3.2** 如果 $v^X$ 是局部有界的，且下面的积分方程存在唯一解，我们称 X 是可整流的：
+
+$$
+Z_t = Z_0 + \int_0^t v^X(Z_s,s)ds, \quad \forall t \in [0,1], \quad Z_0 = X_0
+
+$$
+
+在这种情况下，$Z = \{Z_t : t \in [0,1]\}$ 被称为由 X 诱导的整流流。
+
+**定理 3.3** 假设 X 是可整流的，Z 是其整流流。则对所有 $t \in [0,1]$ 有：$Law(Z_t) = Law(X_t)$。
+
+**证明** 对于任意紧支撑的连续可微测试函数 $h: \mathbb{R}^d \to \mathbb{R}$，我们有：
+
+$$
+\frac{d}{dt}\mathbb{E}[h(X_t)] = \mathbb{E}[\nabla h(X_t)^T \dot{X_t}] = \mathbb{E}[\nabla h(X_t)^T v^X(X_t,t)]
+
+$$
+
+这里我们用到了 $v^X(X_t,t) = \mathbb{E}[\dot{X_t}|X_t]$。根据定义，这等价于 $\pi_t := Law(X_t)$ 在分布意义下求解具有漂移 $v^X_t := v^X(\cdot,t)$ 的连续性方程：
+
+$$
+\dot{\pi_t} + \nabla \cdot (v^X_t \pi_t) = 0
+
+$$
+
+要看到(10)和(11)的等价性，我们可以将(11)两边乘以 h 并积分：
+
+$$
+\begin{aligned}
+0 &= \int h(\dot{\pi_t} + \nabla \cdot (v^X_t \pi_t)) \\
+&= \int h\dot{\pi_t} - \nabla h^T v^X_t \pi_t \\
+&= \frac{d}{dt}\mathbb{E}[h(X_t)] - \mathbb{E}[\nabla h(X_t)^T v^X(X_t,t)]
+\end{aligned}
+
+$$
+
+这里我们用到了分部积分：
+
+$$
+\int h\nabla \cdot (v^X_t \pi_t) = -\int \nabla h^T(v^X_t \pi_t)
+
+$$
+
+因为 $Z_t$ 由相同的速度场 $v^X$ 驱动，其边缘分布 $Law(Z_t)$ 求解相同的方程且具有相同的初始条件($Z_0 = X_0$)。因此，如果方程(11)的解是唯一的，$Law(Z_t)$ 和 $Law(X_t)$ 的等价性就成立了。而(11)解的唯一性等价于 $dZ_t = v^X(Z_t,t)dt$ 解的唯一性，这可以由 Kurtz [37] 的推论 1.3 得到（另见 Ambrosio 和 Crippa [1] 的定理 4.1）。
+
+---
+
+第二步是利用向量函数求导的性质。原始的性质是复合函数的链式法则，适用于标量函数对向量的求导。
+
+具体来说，对于复合函数 $h(X_t)$，其中 $h: \mathbb{R}^d \to \mathbb{R}$ 是标量函数，$X_t: \mathbb{R} \to \mathbb{R}^d$ 是向量值函数，复合函数对时间 $t$ 的导数遵循以下链式法则：
+
+$$
+\frac{d}{dt}h(X_t) = \sum_{i=1}^d \frac{\partial h(X_t)}{\partial (X_t)_i} \cdot \frac{d(X_t)_i}{dt}
+
+$$
+
+这可以用向量形式更简洁地表示为：
+
+$$
+\frac{d}{dt}h(X_t) = \nabla h(X_t)^{\top} \dot{X}_t
+
+$$
+
+其中：
+
+- $\nabla h(X_t)$ 是函数 $h$ 在点 $X_t$ 处的梯度，即 $\nabla h(X_t) = \left(\frac{\partial h}{\partial x_1}, \frac{\partial h}{\partial x_2}, \ldots, \frac{\partial h}{\partial x_d}\right)^{\top}$ 在 $X_t$ 处的值
+- $\dot{X}_t = \frac{dX_t}{dt}$ 是向量 $X_t$ 对时间 $t$ 的导数
+
 ---
 
 ## Reflow
@@ -257,7 +365,7 @@ $$
 其中 $ S(\{Z_t\}) = 0 $ 表示轨迹完全为直线。研究表明，
 
 $$
-\mathbb{E}_{k \sim \mathrm{Unif}(\{1,\dots,K\})}\Bigl[S(\{Z_t^k\})\Bigr] = \mathcal{O}\Bigl(\frac{1}{K}\Bigr)
+\mathbb{E}_{k \sim \mathrm{Unif}(\{1,\dots,K\})\Bigr[S(\{Z_t^k\})\Bigr] = \mathcal{O}\Bigl(\frac{1}{K}\Bigr),
 
 $$
 
@@ -267,89 +375,7 @@ $$
 
 > **Reflow 与捷径学习。** 直观上，Reflow 类似于人类的捷径学习：一旦首次解决了某个问题，我们便学会了直接走捷径，从而在下一次能够更快地得到解答。
 
-## 整体流程
-
-```mermaid
-flowchart TB
-      %% 设置样式
-      classDef data fill:#D4E5F7,stroke:#3474A4,stroke-width:2px
-      classDef model fill:#FFE6E6,stroke:#CC0000,stroke-width:2px
-      classDef process fill:#E6FFE6,stroke:#006600,stroke-width:2px
-      classDef decision fill:#F7E6FF,stroke:#660066,stroke-width:2px
-
-      %% 开始
-      Start([开始]) --> Init
-
-      %% 初始化阶段
-      subgraph Init[初始化分布采样]
-          I1[/"从源分布采样 X₀ ~ π₀\n(如高斯噪声或源域图像)"/]:::data
-          I2[/"从目标分布采样 X₁ ~ π₁\n(如真实图像或目标域图像)"/]:::data
-          I1 --> I2
-      end
-
-      %% 迭代优化阶段
-      Init --> IterLoop
-
-      subgraph IterLoop[迭代优化 k 次]
-          %% 插值过程
-          subgraph Interp[插值和路径构建]
-              IP1["构建线性插值轨迹:\nXt = (1-t)X₀⁽ᵏ⁾ + tX₁⁽ᵏ⁾\nt ∈ [0,1]"]:::process
-              IP2["计算期望路径方向:\ndX_t/dt = X₁ - X₀"]:::process
-              IP3["构建训练数据对:\n(Xt, X₁-X₀)"]:::data
-              IP1 --> IP2 --> IP3
-          end
-
-          %% 速度场训练
-          subgraph Train[速度场训练]
-              T1["初始化神经网络速度场\nv_θ(x,t)"]:::model
-              T2["最小二乘优化目标:\nmin ∫E||dX_t/dt - v_θ(Xt,t)||²dt"]:::process
-              T3["获得最优速度场\nv*_t(x) = E[dX_t/dt|Xt=x]"]:::model
-              T1 --> T2 --> T3
-          end
-
-          %% ODE求解
-          subgraph ODE[ODE求解]
-              O1["前向ODE求解:\ndZt = v_θ(Zt,t)dt\nZ₀ = X₀"]:::process
-              O2["或反向ODE求解:\nd𝕏t = -v_θ(𝕏t,t)dt\n𝕏₁ = X₁"]:::process
-              O3["Euler离散化求解:\nZ_(t+ε) = Z_t + εv_θ(Z_t,t)"]:::process
-              O1 --- O2 --> O3
-          end
-
-          %% 更新耦合
-          Update["更新分布耦合:\nX₀⁽ᵏ⁺¹⁾ = X₀⁽ᵏ⁾\nX₁⁽ᵏ⁺¹⁾ = Z₁"]:::data
-          Counter["增加迭代计数:\nk = k + 1"]:::process
-          Check{"是否完成K次\nReflow迭代?"}:::decision
-
-          Interp --> Train --> ODE --> Update
-          Update --> Counter --> Check
-          Check -->|"No (k < K)"| Interp
-          Check -->|"Yes (k = K)"| Final
-      end
-
-      %% 最终生成阶段
-      subgraph Final[最终生成]
-          F1[/"采样新的起点 Z₀ ~ π₀"/]:::data
-          F2["使用训练好的速度场\n单步或多步Euler离散化生成"]:::model
-          F3["生成目标样本 Z₁ ~ π₁"]:::data
-          F1 --> F2 --> F3
-      end
-
-      Final --> End([结束])
-
-      %% 图例
-      subgraph Legend[图例]
-          L1[数据相关操作]:::data
-          L2[模型/网络相关]:::model
-          L3[处理过程]:::process
-          L4{判断节点}:::decision
-      end
-```
-
-## 实验效果
-
-# 理论推导
-
-## 证明1：条件期望是优化目标最优解
+## 理论推导
 
 在本节中，我们将严格证明为什么优化目标：
 
@@ -403,41 +429,37 @@ $$
 ### 条件期望引入
 
 > **条件期望的性质说明：**
-> 
+>
 > 在这一步中，我们使用了条件期望的以下关键性质：
-> 
+>
 > 1. **全期望公式（Law of Total Expectation）**：对于任意随机变量 $X$ 和 $Y$，以及可积函数 $g$，有
->    
+>
 >    $$
 >    \mathbb{E}[g(X)] = \mathbb{E}[\mathbb{E}[g(X)|Y]]
-
+>
 >    $$
-> 
 > 2. **条件期望的线性性**：对于随机变量 $X$、$Y$ 和函数 $g_1$、$g_2$，有
->    
+>
 >    $$
 >    \mathbb{E}[a g_1(X) + b g_2(X)|Y] = a\mathbb{E}[g_1(X)|Y] + b\mathbb{E}[g_2(X)|Y]
-
+>
 >    $$
-> 
 > 3. **条件期望与确定性变量的分离**：若 $h(Y)$ 是 $Y$ 的函数，则
->    
+>
 >    $$
 >    \mathbb{E}[h(Y)g(X)|Y] = h(Y)\mathbb{E}[g(X)|Y]
-
+>
 >    $$
-> 
+>
 > 在我们的推导中，将 $\mathbb{E}_{x_0,x_t}[\frac{\partial \varphi_t}{\partial t}\cdot\nabla_{x_t}\phi(x_t)]$ 改写为条件期望形式时，我们应用了上述性质：
-> 
+>
 > - 首先，注意到 $\nabla_{x_t}\phi(x_t)$ 只依赖于 $x_t$，因此在给定 $x_t$ 的条件下是确定的
-> 
 > - 应用性质3，可将其从条件期望中分离出来：
->   
 >   $$
 >   \mathbb{E}_{x_0,x_t}\left[\frac{\partial \varphi_t}{\partial t}\cdot\nabla_{x_t}\phi(x_t)\right] = \mathbb{E}_{x_t}\left[\mathbb{E}_{x_0|x_t}\left[\frac{\partial \varphi_t}{\partial t}\right]\cdot\nabla_{x_t}\phi(x_t)\right]
-
+>
 >   $$
-> 
+>
 > 这一变换是推导ODE形式的关键步骤，它使我们能够将条件期望 $\mathbb{E}_{x_0|x_t}[\frac{\partial \varphi_t}{\partial t}]$ 识别为最优速度场。
 
 利用条件期望的性质，可以将表达式改写为：
@@ -507,6 +529,8 @@ $$
 ---
 
 # 条件期望与确定性变量的分离
+
+您问到的是条件期望与确定性变量分离性质中的期望符号含义及其推导。我来详细解释：
 
 ## 性质表述
 
@@ -593,7 +617,7 @@ $$
 
 ---
 
-# 证明1：最优解证明中的期望性质解析（备份）
+# 最优解证明中的期望性质解析
 
 在最优解证明过程中，我们使用了期望的一个重要性质，我来详细解释这个性质及其在证明中的应用。
 
@@ -679,86 +703,3 @@ $$
 4. 内积的线性性质：$\langle a + b, c \rangle = \langle a, c \rangle + \langle b, c \rangle$
 
 这些性质共同帮助我们推导出了最优的分数匹配模型 $s_\theta^*(x_t,t)$。
-
----
-
-## 证明2：边缘分布保持性质
-
-边缘分布保持性质指的是：对于 $\forall t$，$Law(Z_t) = Law(X_t)$ 是非线性整流流在(6)中的一般性质，无论插值过程 $X_t$ 是否为直线 [3]。
-
-**定义 3.1** 对于一个路径连续可微的随机过程 $X = \{X_t : t \in [0,1]\}$，其期望速度 $v^X$ 定义为：
-
-$$
-v^X(x,t) = \mathbb{E}[\dot{X_t}|X_t = x], \quad \forall x \in supp(X_t)
-
-$$
-
-对于 $x \notin supp(X_t)$，条件期望未定义，我们任意设定 $v^X(x,t) = 0$。
-
-**定义 3.2** 如果 $v^X$ 是局部有界的，且下面的积分方程存在唯一解，我们称 X 是可整流的：
-
-$$
-Z_t = Z_0 + \int_0^t v^X(Z_s,s)ds, \quad \forall t \in [0,1], \quad Z_0 = X_0
-
-$$
-
-在这种情况下，$Z = \{Z_t : t \in [0,1]\}$ 被称为由 X 诱导的整流流。
-
-**定理 3.3** 假设 X 是可整流的，Z 是其整流流。则对所有 $t \in [0,1]$ 有：$Law(Z_t) = Law(X_t)$。
-
-**证明** 对于任意紧支撑的连续可微测试函数 $h: \mathbb{R}^d \to \mathbb{R}$，我们有：
-
-$$
-\frac{d}{dt}\mathbb{E}[h(X_t)] = \mathbb{E}[\nabla h(X_t)^T \dot{X_t}] = \mathbb{E}[\nabla h(X_t)^T v^X(X_t,t)]
-
-$$
-
-这里我们用到了 $v^X(X_t,t) = \mathbb{E}[\dot{X_t}|X_t]$。根据定义，这等价于 $\pi_t := Law(X_t)$ 在分布意义下求解具有漂移 $v^X_t := v^X(\cdot,t)$ 的连续性方程：
-
-$$
-\dot{\pi_t} + \nabla \cdot (v^X_t \pi_t) = 0
-
-$$
-
-要看到(10)和(11)的等价性，我们可以将(11)两边乘以 h 并积分：
-
-$$
-\begin{aligned}
-0 &= \int h(\dot{\pi_t} + \nabla \cdot (v^X_t \pi_t)) \\
-&= \int h\dot{\pi_t} - \nabla h^T v^X_t \pi_t \\
-&= \frac{d}{dt}\mathbb{E}[h(X_t)] - \mathbb{E}[\nabla h(X_t)^T v^X(X_t,t)]
-\end{aligned}
-
-$$
-
-这里我们用到了分部积分：
-
-$$
-\int h\nabla \cdot (v^X_t \pi_t) = -\int \nabla h^T(v^X_t \pi_t)
-
-$$
-
-因为 $Z_t$ 由相同的速度场 $v^X$ 驱动，其边缘分布 $Law(Z_t)$ 求解相同的方程且具有相同的初始条件($Z_0 = X_0$)。因此，如果方程(11)的解是唯一的，$Law(Z_t)$ 和 $Law(X_t)$ 的等价性就成立了。而(11)解的唯一性等价于 $dZ_t = v^X(Z_t,t)dt$ 解的唯一性，这可以由 Kurtz [37] 的推论 1.3 得到（另见 Ambrosio 和 Crippa [1] 的定理 4.1）。
-
-第二步是利用向量函数求导的性质。原始的性质是复合函数的链式法则，适用于标量函数对向量的求导。
-
-具体来说，对于复合函数 $h(X_t)$，其中 $h: \mathbb{R}^d \to \mathbb{R}$ 是标量函数，$X_t: \mathbb{R} \to \mathbb{R}^d$ 是向量值函数，复合函数对时间 $t$ 的导数遵循以下链式法则：
-
-$$
-\frac{d}{dt}h(X_t) = \sum_{i=1}^d \frac{\partial h(X_t)}{\partial (X_t)_i} \cdot \frac{d(X_t)_i}{dt}
-
-$$
-
-这可以用向量形式更简洁地表示为：
-
-$$
-\frac{d}{dt}h(X_t) = \nabla h(X_t)^{\top} \dot{X}_t
-
-$$
-
-其中：
-
-- $\nabla h(X_t)$ 是函数 $h$ 在点 $X_t$ 处的梯度，即 $\nabla h(X_t) = \left(\frac{\partial h}{\partial x_1}, \frac{\partial h}{\partial x_2}, \ldots, \frac{\partial h}{\partial x_d}\right)^{\top}$ 在 $X_t$ 处的值
-- $\dot{X}_t = \frac{dX_t}{dt}$ 是向量 $X_t$ 对时间 $t$ 的导数
-
----
