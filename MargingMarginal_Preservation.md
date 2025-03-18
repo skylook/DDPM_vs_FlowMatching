@@ -1,116 +1,170 @@
-# Rectified Flow 论文中边缘分布保持性质的证明
+# Rectified Flow 边缘分布保持性质的完整证明
 
-根据原始论文 ["Rectified Flow: A Marginal Preserving Approach to Optimal Transport for Deep Generative Models"](https://arxiv.org/pdf/2209.03003)，边缘分布保持性质的证明如下所示。我将严格遵循论文中的符号和推导过程。
+## 预备定义
 
-## 定理表述
+### Definition 3.1 (可整流过程)
 
-**定理 3.1**（边缘保持性质）：假设 $Z_t$ 是由下面的 ODE 生成的随机过程：
+随机过程 $X_t = (1-t)X_0 + tX_1, t \in [0,1]$ 称为可整流的，如果：
 
-$$
-\dot{Z}_t = v_t^*(Z_t), \quad Z_0 \sim \pi_0
+1. $(X_0, X_1) \sim \gamma$，其中 $\gamma$ 是从 $\pi_0$ 到 $\pi_1$ 的耦合
+2. 对于任意 $t \in [0,1]$，条件期望 $v_t^*(x) = \mathbb{E}[X_1 - X_0 | X_t = x]$ 存在且良定义
 
-$$
+### Definition 3.2 (整流流)
 
-其中 $v_t^*(x) = \mathbb{E}[X_1 - X_0 | X_t = x]$，且 $(X_0, X_1) \sim \gamma$ 是从 $\pi_0$ 到 $\pi_1$ 的耦合，$X_t = (1-t)X_0 + tX_1$。
-
-那么对于所有 $t \in [0, 1]$，我们有：
+给定可整流过程 X，其整流流是满足以下 ODE 的随机过程 Z：
 
 $$
-\text{Law}(Z_t) = \text{Law}(X_t)
-
-$$
-
-这意味着在任何时间点 $t$，ODE 生成的随机变量 $Z_t$ 的分布与参考随机变量 $X_t$ 的分布相同。
-
-## 证明过程
-
-论文中的证明主要基于概率流（probability flow）的性质。以下是详细的证明步骤：
-
-### 步骤 1：建立概率密度函数的演化方程
-
-设 $p_t(z)$ 表示 $Z_t$ 的概率密度函数，$q_t(x)$ 表示 $X_t$ 的概率密度函数。
-
-根据 Fokker-Planck 方程（在无扩散项的情况下，即纯 ODE 情况），$p_t(z)$ 的演化满足：
-
-$$
-\frac{\partial p_t(z)}{\partial t} = -\nabla \cdot (p_t(z) v_t^*(z))
+\begin{cases}
+\frac{d}{dt}Z_t = v_t^*(Z_t) \\
+Z_0 \sim \pi_0
+\end{cases} \tag{1}
 
 $$
 
-这个方程描述了概率密度如何随着向量场 $v_t^*$ 的作用而变化。
+其中 $v_t^*(x)$ 是由可整流过程 X 定义的向量场。
 
-### 步骤 2：分析参考分布的演化
+**注意**：在后续证明中，我们用 $v_t^X(x)$ 表示这个向量场，即 $v_t^X(x) = v_t^*(x)$。
 
-对于参考分布 $X_t = (1-t)X_0 + tX_1$，我们可以直接计算其时间导数：
+## 定理（边缘分布保持性质）
 
-$$
-v_t(x)=\frac{d X_t}{dt} = X_1 - X_0
+假设 X 是可整流的，Z 是其整流流。那么对于任意 $t \in [0,1]$，有 $\text{Law}(Z_t) = \text{Law}(X_t)$。
 
-$$
-
-这意味着 $X_t$ 的变化率恰好是 $X_1 - X_0$。
-
-根据概率密度函数的变换规则，$q_t(x)$ 的演化满足：
+也就是 $Z_t$ 与 $X_t$ 分布均为 $\pi_t$ 或者说我们需要证明二者的概率密度相同：
 
 $$
-\frac{\partial q_t(x)}{\partial t} = -\nabla \cdot (p_t(x) v_t(x)) = -\nabla \cdot (q_t(x) \mathbb{E}[X_1 - X_0 | X_t = x])
-
-$$
-
-注意到 $\mathbb{E}[X_1 - X_0 | X_t = x] = v_t^*(x)$，因此：
-
-$$
-\frac{\partial q_t(x)}{\partial t} = -\nabla \cdot (q_t(x) v_t^*(x))
-
-$$
-
-### 步骤 3：证明分布相等
-
-我们观察到 $p_t(z)$ 和 $q_t(x)$ 满足相同的偏微分方程：
-
-$$
-\frac{\partial p_t(z)}{\partial t} = -\nabla \cdot (p_t(z) v_t^*(z))
+p_t^X(x)=p_t^Z(z)
 
 $$
 
 $$
-\frac{\partial q_t(x)}{\partial t} = -\nabla \cdot (q_t(x) v_t^*(x))
+
+
 
 $$
 
-此外，由于 $Z_0 \sim \pi_0$ 和 $X_0 \sim \pi_0$，我们有初始条件 $p_0(z) = q_0(z)$。
+## 证明
 
-根据偏微分方程解的唯一性定理，在相同的初始条件和相同的演化方程下，解是唯一的。因此，对于所有 $t \in [0, 1]$，我们有：
+### 步骤 1：引入测试函数
+
+考虑任意紧支撑的连续可微测试函数 $h: \mathbb{R}^d \to \mathbb{R}$。测试函数的引入允许我们：
+
+- 研究概率分布的演化
+- 将随机过程的性质转化为确定性 PDE （偏微分方程）问题（为了利用连续性函数性质）
+
+### 步骤 2：证明线性插值过程 $X_t$ 满足连续性方程
+
+#### 2.1 分析 $X_t$
+
+对于线性插值过程 $X_t = (1-t)X_0 + tX_1$，其时间导数为 $\dot{X_t} = X_1 - X_0$。
+
+考虑 $E[h(X_t)]$ 关于时间的导数：
 
 $$
-p_t(z) = q_t(z)
+\frac{d}{dt}E[h(X_t)] = E[\nabla h(X_t)^T \dot{X_t}] = E[\nabla h(X_t)^T v_t^X(X_t)] \tag{2}
+
+$$
+
+其中 $v_t^X(X_t) = E[\dot{X_t}|X_t] = E[X_1 - X_0|X_t]=E[X_1 - X_0|X_t=x]$ 是条件期望形式的向量场，与 Definition 3.1 中的 $v_t^*(x)$ 完全一致。
+
+#### 2.2 引入连续性方程
+
+令 $p_t^X(x)$ 表示 $X_t$ 的概率密度函数。我们希望证明的是：步骤 2 中的等式等价于 $p_t^X(x)$ 满足以下连续性方程（Continuity Equation）：
+
+$$
+\frac{\partial}{\partial t} p_t^X(x) + \nabla_x \cdot (v_t^X(x) p_t^X(x)) = 0 \tag{3}
+
+$$
+
+#### 2.3 证明 $X_t$ 满足连续性方程
+
+为证明步骤2和步骤3的等价性，将连续性方程乘以测试函数 h 并在整个空间积分：
+
+$$
+0 = \int_{\mathbb{R}^d} h(x)(\frac{\partial}{\partial t} p_t^X(x) + \nabla_x \cdot (v_t^X(x) p_t^X(x)))dx \tag{4}
+
+$$
+
+前半部分挪到左边，将公式分成左右两部分：
+
+$$
+\int_{\mathbb{R}^d} h(x)(\frac{\partial}{\partial t} p_t^X(x)) dx = - \int_{\mathbb{R}^d}\nabla_x \cdot (v_t^X(x) p_t^X(x))dx \tag{4}
+
+$$
+
+我们先看左边部分：
+
+$$
+\int_{\mathbb{R}^d} h(x)(\frac{\partial}{\partial t} p_t^X(x)) dx = \frac{d}{d t}\int_{\mathbb{R}^d} h(x)p_t^X(x) dx = \frac{d}{d t} E [h(X_t)]
+
+$$
+
+使用分部积分（对空间变量 x）：
+
+$$
+\int_{\mathbb{R}^d} h(x)\nabla_x \cdot (v_t^X(x) p_t^X(x))dx = -\int_{\mathbb{R}^d} \nabla_x h(x)^T (v_t^X(x) p_t^X(x))dx \tag{5}
+
+$$
+
+这表明随机过程视角（期望的导数）和PDE视角（连续性方程）是等价的：
+
+$$
+\frac{d}{dt}E[h(X_t)] = E[\nabla h(X_t)^T v_t^X(X_t)] \tag{6}
+
+$$
+
+### 步骤 3：分析 Z_t 过程满足连续性方程
+
+考虑整流流 $Z_t$，它满足 ODE：
+
+$$
+\frac{d}{dt}Z_t = v_t^X(Z_t) \tag{7}
+
+$$
+
+其中：
+
+1. 初始条件 $Z_0 = X_0$
+2. 速度场 $v_t^X$ 与 X_t 过程中的相同
+
+根据 Liouville 定理，当随机过程由确定性 ODE 驱动时，其概率密度函数必然满足连续性方程。因此，令 $p_t^Z(z)$ 表示 $Z_t$ 的概率密度函数，它满足：
+
+$$
+\frac{\partial}{\partial t} p_t^Z(z) + \nabla_z \cdot (v_t^X(z) p_t^Z(z)) = 0 \tag{8}
+
+$$
+
+### 步骤 4：利用唯一性完成证明
+
+现在我们有：
+
+1. $p_t^X(x)$ 和 $p_t^Z(z)$ 满足相同的连续性方程
+2. 具有相同的初始条件：$p_0^X(x) = p_0^Z(x)$（因为 $Z_0 = X_0$）
+3. 速度场 $v_t^X$ 满足适当的正则性条件
+
+根据 Kurtz 的推论 1.3，在这些条件下，连续性方程的解是唯一的。因此：
+
+对于所有 $t \in [0,1]$ 和 $x \in \mathbb{R}^d$，有
+
+$$
+p_t^Z(x) = p_t^X(x) \tag{9}
 
 $$
 
 这就证明了 $\text{Law}(Z_t) = \text{Law}(X_t)$。
 
-## 技术细节与补充说明
+## 证明要点总结
 
-论文中还提供了一些技术细节，对证明进行了补充：
+1. **速度场的一致性**：
 
-1. **正则性条件**：论文假设向量场 $v_t^*$ 足够光滑，以确保 ODE 有唯一解，且概率密度函数的演化方程成立。
-2. **条件期望的存在性**：论文假设条件期望 $\mathbb{E}[X_1 - X_0 | X_t = x]$ 对于所有 $t \in [0, 1]$ 和 $x$ 都存在且良定义。
-3. **实际应用中的近似**：在实际应用中，我们通过神经网络 $v_\theta(x, t)$ 来近似 $v_t^*(x)$，并通过最小化以下损失函数来训练：
+   - $v_t^*(x)$（定义）= $v_t^X(x)$（证明中使用）
+   - 这个速度场通过条件期望定义，并在整个证明中保持不变
+2. **两个关键等价性**：
 
-   $$
-   \mathcal{L}(\theta) = \mathbb{E}_{t, X_0, X_1} \left[ \| v_\theta(X_t, t) - (X_1 - X_0) \|^2 \right]
+   - 随机过程的期望导数与连续性方程的等价（步骤4）
+   - ODE驱动过程与连续性方程的等价（步骤5）
+3. **唯一性论证**：
 
-   $$
-
-   这个损失函数的最小值在 $v_\theta(x, t) = \mathbb{E}[X_1 - X_0 | X_t = x] = v_t^*(x)$ 时达到。
-4. **离散化误差**：在数值实现中，我们使用欧拉方法等离散化方法来求解 ODE，这会引入一些误差。当轨迹越接近直线时，这种离散化误差越小。
-
-## 直观理解
-
-从直观上理解，这个证明告诉我们：
-
-1. 如果我们构造一个向量场 $v_t^*(x) = \mathbb{E}[X_1 - X_0 | X_t = x]$，它代表了在每个点 $x$ 和时间 $t$，系统应该朝哪个方向移动，才能保持分布与参考分布匹配。
-2. 当我们使用这个向量场来驱动 ODE 系统时，生成的轨迹 $Z_t$ 在任何时间点 $t$ 的分布都会与参考轨迹 $X_t$ 的分布相匹配。
-3. 这个性质保证了我们可以通过求解 ODE 来实现从分布 $\pi_0$ 到分布 $\pi_1$ 的转换，同时保持中间状态的分布与参考分布一致。
-
-这正是 Rectified Flow 方法的核心理论基础，它确保了生成过程在任何时间点都能保持与参考分布的一致性。
+   - 相同的方程
+   - 相同的初始条件
+   - 适当的正则性条件
+     保证了解的唯一性
