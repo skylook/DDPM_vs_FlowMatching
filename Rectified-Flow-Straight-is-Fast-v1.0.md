@@ -25,17 +25,12 @@ Rectified Flow 通过将一个平滑连接噪声与数据的插值过程"因果�
 |      | ![](assets/20250317_175847_ddpm-0-1.jpg) |                |
 |      |                                          |                |
 
-公式
 
-流程
-
-如何一步生成？
+那么我们看到 DDPM 在预测的时候是一步步生成从 $Z_0$（通常要 20 - 1000 步） 逼近 $Z_1$，那么自然的想法就是如何更快地生成呢？
 
 ![](assets/20250317_175755_best-flow-straight.jpg)
 
-走直线最快。
-
-![](assets/20250310_112636_reflow-example.jpg)
+最直观的想法当然是走直线最快，如果我们使用的是预测速度的 v-prediction 方式，那么只有在路径为直线时，一步生成式没有误差的，其他路径逼近都有误差。
 
 Rectified Flow，一个"简简单单走直线“生成模型，是我们对这些挑战的一个回答：极度简单，一步生成。我们的方法有以下要点：
 
@@ -134,10 +129,10 @@ $$
 > **耦合优化的核心思想**
 > Rectified Flow通过以下步骤优化耦合：
 >
-> 1. **初始独立耦合**：从独立样本对 \( (X_0, X_1) \) 开始
-> 2. **校正速度场**：学习 \( v_t^*(x) = \mathbb{E}[X_1 - X_0 \mid X_t = x] \)
-> 3. **生成新耦合**：通过ODE \( \dot{Z}_t = v_t^*(Z_t) \) 得到 \( (Z_0, Z_1) \)
-> 4. **迭代直化**：将 \( (Z_0, Z_1) \) 作为新耦合输入Reflow过程
+> 1. **初始独立耦合**：从独立样本对 $(X_0, X_1)$ 开始
+> 2. **校正速度场**：学习 $v_t^*(x) = \mathbb{E}[X_1 - X_0 \mid X_t = x]$
+> 3. **生成新耦合**：通过ODE $\dot{Z}_t = v_t^*(Z_t)$ 得到 $(Z_0, Z_1)$
+> 4. **迭代直化**：将 $(Z_0, Z_1)$ 作为新耦合输入Reflow过程
 >
 > **示例**：
 > 若初始耦合为独立分布，经过一次 Rectify 后，新耦合 $(Z_0, Z_1)$ 满足：
@@ -420,6 +415,10 @@ flowchart TB
 ```
 
 ## 实验效果
+
+![](assets/20250310_112636_reflow-example.jpg)
+
+图5：1-Rectified Flow 与 2-Rectified Flow
 
 # 理论推导
 
@@ -837,9 +836,3 @@ $$
 
 - $\nabla h(X_t)$ 是函数 $h$ 在点 $X_t$ 处的梯度，即 $\nabla h(X_t) = \left(\frac{\partial h}{\partial x_1}, \frac{\partial h}{\partial x_2}, \ldots, \frac{\partial h}{\partial x_d}\right)^{\top}$ 在 $X_t$ 处的值
 - $\dot{X}_t = \frac{dX_t}{dt}$ 是向量 $X_t$ 对时间 $t$ 的导数
-
----
-
-# 参考文档
-
-1. https://zhuanlan.zhihu.com/p/11228697012 （几何直观解释）
