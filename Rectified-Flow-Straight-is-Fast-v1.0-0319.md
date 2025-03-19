@@ -48,6 +48,8 @@ $$
 
 那么有没有原理更简单、生成速度更快（最好一步生成）的方法呢？Rectified Flow 就是这样一种方法。
 
+![](assets/20250317_175755_best-flow-straight.jpg)
+
 Rectified Flow，一个"简简单单走直线"生成模型，是对这些挑战的一个回答：极度简单，一步生成。该方法有以下要点：
 
 （1）无需一般扩散模型复杂的推导，代之以一个简单的"沿直线生成"的思想。算法理解上不需要变分法或随机微分方程等基础知识。Rectified Flow方法基于一个简单的常微分方程(ODE)，通过构造一个"尽量走直线"的连续运动系统来产生想要的数据分布。
@@ -146,13 +148,13 @@ $$
 
 ### 符号定义
 
-原始样本：
+原始耦合：
 
 * $X_0$ ：初始分布 $\pi_0$ 中的样本（比如高斯噪声）
 * $X_1$ ：目标分布 $\pi_1$ 中的样本（比如真实图像）
 * $X_t = t X_1 + (1-t) X_0$：线性插值 $t$ 时刻的轨迹
 
-Rectified Flow：
+Rectified 耦合：
 
 * $Z_0$ ：与 $X_0$ 具有相同分布的新起点（比如重新在高斯噪声中采样）
 * $Z_1$ ：通过 Rectified Flow 网络预测速度并积分得到的新的对应于 $Z_0$ 的终点
@@ -180,22 +182,17 @@ Rectified Flow 的构造方法如下：
   这种插值过程 $\{X_t\}$ 是通过 **"锚定-桥接"** 方式生成的：首先采样端点 $X_0$ 与 $X_1$，然后生成连接这两者的中间轨迹。
 * **边际匹配：**
 
-  通过上述构造，插值过程 $\{X_t\}$ 的端点 $X_0$ 和 $X_1$ 自然匹配目标分布 $\pi_0$ 与 $\pi_1$。但是，$\{X_t\}$ 并不是一个 **因果** 的 ODE 过程（因为实际预测时采样一个新的 $Z_0$ 我们不可能知道 $Z_1$ 并和 $X$ 一样直接差值得到）。那么我们自然想到的是如果可以预测 $t$ 时刻的速度 $v(Z_t, t)$，这样一个因果的 ODE 过程来实现：
-
-  $$
-  \frac{dZ_t}{dt}=v(Z_t,t)
-
-  $$
+  通过上述构造，插值过程 $\{X_t\}$ 的端点 $X_0$ 和 $X_1$ 自然匹配目标分布 $\pi_0$ 与 $\pi_1$。但是，$\{X_t\}$ 并不是一个 **因果** 的 ODE 过程（比如 $\dot{Z}_t = v_t(Z_t)$），后者是通过从 $Z_0$ 随时间前进生成 $Z_1$。生成 $X_t$ 则需要同时依赖 $X_0$ 和 $X_1$，而非仅从 $X_0$ 随 $t$ 增加而演化。
 * **速度场估计：**
 
-  为了将插值过程转换为 ODE 流，我们需要使用神经网络学习预测一个速度场 $v_{\theta}(X_t, t)$ 。那么最直观的想法就是最小化刚才我们差值得到的样本速度与预测的速度的平方误差。为此，我们把 Loss 定义为如下优化问题：
+  为了将插值过程转换为 ODE 流，我们需要使用神经网络学习一个速度场 $v_t$ ，使得它能近似 $X_t$ 的时间导数 $\dot{X}_t$。为此，我们求解如下优化问题：
 
   $$
-  \mathcal{L}=\min_v \int_0^1 \mathbb{E}\Bigl[\|\dot{X}_t - v_{\theta}(X_t,t)\|^2\Bigr] dt.
+  \min_v \int_0^1 \mathbb{E}\Bigl[\|\dot{X}_t - v(X_t,t)\|^2\Bigr] dt.
 
   $$
 
-  其中：
+  其中 $v$ 通常使用深度神经网络（参数为 $\theta$ ）进行参数化，因此在后面证明时我们会标记为 $v_{\theta}$，期望项关于插值轨迹取样。当然在直线差值情况下：
 
   $$
   \dot{X}_t = X_1 - X_0
@@ -203,29 +200,20 @@ Rectified Flow 的构造方法如下：
   $$
 
   > **符号说明。** 一个随机过程 $X_t = X(t,\omega)$ 是关于时间 $t$ 及随机种子 $\omega$ 的可测函数（随机种子的分布记作 $\mathbb{P}$）。在这里，端点 $(X_0,X_1)$ 就构成了随机种子；而 $\dot{X}_t = \partial_t X(t,\omega)$ 是关于 $t$ 的偏导数，同样依赖于同一随机种子。通常我们在书写时会省略随机种子的符号。
+  >
 
-那我们整个 Rectified Flow 的训练方法就定义完了，看起来非常简单。但很明显我们会想到下面的两个问题：
+  这一优化问题的最优解为条件均值（<mark>我们需要证明的部分，证明1</mark>）：
 
-问题1：通过 Loss 优化得到的最优解 $v_t^*(x)$ 应该是什么呢？
-在后面的证明中，我们会经过推导得到这一优化问题的最优解为条件均值：
+  $$
+  v_t^*(x) = \mathbb{E}\bigl[\dot{X}_t \mid X_t = x\bigr].
 
-$$
-v_t^*(x) = \mathbb{E}\bigl[\dot{X}_t \mid X_t = x\bigr].
-
-$$
+  $$
 
 且在这种直线插值中，这一结果与 $t$ 无关。
-
-问题2：从最优解看来，$v_t^*(x)$ 肯定是不会交叉的，且也不可能保证和原始样本一样是直线差值。
 
 ![](assets/20250310_144416_retified-flow-show.gif)
 
 ***图2.** 图中展示了从 $\pi_0$ 到 $\pi_1$ 的 Rectified Flow。蓝色和绿色轨迹表示不同模式的轨迹，便于可视化。*
-
-图2(a) 秒数据了 $X_t$ 线性插值的轨迹（直线，且可能存在相交）
-图2(b) 展示了通过 $v_t^*(x)$ 的速度场重构的 Rectified Flow 轨迹（不相交，也不一定为直线）
-
-看起来轨迹都不一样，那么 $X_t$ 和 $Z_t$ 的分布是一样的吗（即 $p(x_t) = p(z_t)$）？
 
 ![](assets/20250319_112204_rectified_flow_vector_field.svg)
 
@@ -437,3 +425,420 @@ flowchart TB
 ![](assets/20250310_112636_reflow-example.jpg)
 
 图5：1-Rectified Flow 与 2-Rectified Flow
+
+# 理论推导
+
+## 证明1：条件期望是优化目标最优解
+
+在本节中，我们将严格证明为什么优化目标：
+
+$$
+\mathbb{E}_{x_0\sim \pi_0, x_1\sim \pi_1} \left[\|v_\theta(x_t,t) - \frac{\partial}{\partial t}\varphi_t(x_0,x_1)\|^2\right]
+
+$$
+
+会导出最优速度场 $v_t^*(x) = \mathbb{E}[\dot{X}_t \mid X_t = x]$，从而构建满足所需边际分布的ODE：
+
+$$
+\frac{dx_t}{dt}=v_t^*(x_t)
+
+$$
+
+### 基本假设
+
+- 假设存在轨迹 $x_t=\varphi_t(x_0,x_1)$，这对应于我们的直线插值 $X_t = t X_1 + (1-t) X_0$
+- 假设该轨迹关于 $x_1$ 是可逆的，即可以解出 $x_1=\psi_t(x_0,x_t)$
+
+### 期望表达式推导
+
+从测试函数的角度开始分析。给定任意光滑测试函数 $\phi$，考虑其在时间 $t+\Delta t$ 处的期望：
+
+$$
+\mathbb{E}_{x_{t+\Delta t}}[\phi(x_{t+\Delta t})] = \mathbb{E}_{x_0,x_1}[\phi(\varphi_{t+\Delta t}(x_0,x_1))]
+
+$$
+
+通过泰勒展开到一阶：
+
+$$
+\mathbb{E}_{x_0,x_1}\left[\phi(\varphi_t(x_0,x_1)) + \Delta t\frac{\partial \varphi_t(x_0,x_1)}{\partial t}\cdot\nabla_{\varphi_t}\phi(\varphi_t(x_0,x_1))\right] + o(\Delta t)
+
+$$
+
+这可以重写为：
+
+$$
+\mathbb{E}_{x_0,x_1}[\phi(x_t)] + \Delta t\mathbb{E}_{x_0,x_1}\left[\frac{\partial \varphi_t(x_0,x_1)}{\partial t}\cdot\nabla_{x_t}\phi(x_t)\right] + o(\Delta t)
+
+$$
+
+注意到 $x_t = \varphi_t(x_0,x_1)$，上式可表示为：
+
+$$
+\mathbb{E}_{x_t}[\phi(x_t)] + \Delta t\mathbb{E}_{x_0,x_t}\left[\frac{\partial \varphi_t(x_0,x_1)}{\partial t}\cdot\nabla_{x_t}\phi(x_t)\right] + o(\Delta t)
+
+$$
+
+### 条件期望引入
+
+> **条件期望的性质说明：**
+>
+> 在这一步中，我们使用了条件期望的以下关键性质：
+>
+> 1. **全期望公式（Law of Total Expectation）**：对于任意随机变量 $X$ 和 $Y$，以及可积函数 $g$，有
+>
+>    $$
+>    \mathbb{E}[g(X)] = \mathbb{E}[\mathbb{E}[g(X)|Y]]
+>
+>    $$
+
+> $$
+> . **条件期望的线性性**：对于随机变量 $X$、$Y$ 和函数 $g_1$、$g_2$，有
+>
+> $$
+>
+> \mathbb{E}[a g_1(X) + b g_2(X)|Y] = a\mathbb{E}[g_1(X)|Y] + b\mathbb{E}[g_2(X)|Y]
+
+> $$
+> . **条件期望与确定性变量的分离**：若 $h(Y)$ 是 $Y$ 的函数，则
+>
+> $$
+>
+> \mathbb{E}[h(Y)g(X)|Y] = h(Y)\mathbb{E}[g(X)|Y]
+
+> $$
+> ��我们的推导中，将 $\mathbb{E}_{x_0,x_t}[\frac{\partial \varphi_t}{\partial t}\cdot\nabla_{x_t}\phi(x_t)]$ 改写为条件期望形式时，我们应用了上述性质：
+>
+> - 首先，注意到 $\nabla_{x_t}\phi(x_t)$ 只依赖于 $x_t$，因此在给定 $x_t$ 的条件下是确定的
+>
+> - 应用性质3，可将其从条件期望中分离出来：
+>
+> $$
+>
+> \mathbb{E}_{x_0,x_t}\left[\frac{\partial \varphi_t}{\partial t}\cdot\nabla_{x_t}\phi(x_t)\right] = \mathbb{E}_{x_t}\left[\mathbb{E}_{x_0|x_t}\left[\frac{\partial \varphi_t}{\partial t}\right]\cdot\nabla_{x_t}\phi(x_t)\right]
+
+> $$
+> 这一变换是推导ODE形式的关键步骤，它使我们能够将条件期望 $\mathbb{E}_{x_0|x_t}[\frac{\partial \varphi_t}{\partial t}]$ 识别为最优速度场。
+>
+> $$
+
+利用条件期望的性质，可以将表达式改写为：
+
+$$
+\mathbb{E}_{x_t}[\phi(x_t)] + \Delta t\mathbb{E}_{x_t}\left[\mathbb{E}_{x_0|x_t}\left[\frac{\partial \varphi_t(x_0,x_1)}{\partial t}\right]\cdot\nabla_{x_t}\phi(x_t)\right] + o(\Delta t)
+
+$$
+
+根据泰勒展开的逆向应用，这等价于：
+
+$$
+\mathbb{E}_{x_t}\left[\phi\left(x_t + \Delta t\mathbb{E}_{x_0|x_t}\left[\frac{\partial \varphi_t(x_0,x_1)}{\partial t}\right]\right)\right] + o(\Delta t)
+
+$$
+
+### ODE 推导
+
+由于上述等式对任意测试函数 $\phi$ 成立，我们可以得到：
+
+$$
+x_{t+\Delta t} \approx x_t + \Delta t\mathbb{E}_{x_0|x_t}\left[\frac{\partial \varphi_t(x_0,x_1)}{\partial t}\right]
+
+$$
+
+当 $\Delta t \rightarrow 0$ 时，这正是如下ODE：
+
+$$
+\frac{dx_t}{dt} = \mathbb{E}_{x_0|x_t}\left[\frac{\partial \varphi_t(x_0,x_1)}{\partial t}\right]
+
+$$
+
+对于线性插值 $\varphi_t(x_0,x_1) = t x_1 + (1-t) x_0$，我们有 $\frac{\partial \varphi_t}{\partial t} = x_1 - x_0$，因此：
+
+$$
+\frac{dx_t}{dt} = \mathbb{E}_{x_0|x_t}[x_1 - x_0] = v_t^*(x_t)
+
+$$
+
+### 最优解证明
+
+根据期望的性质：
+
+$$
+\mathbb{E}[X] = \arg\min_{\mu} \mathbb{E}[\|X-\mu\|^2]
+
+$$
+
+这表明条件期望 $\mathbb{E}_{x_0|x_t}[\frac{\partial \varphi_t}{\partial t}]$ 正是优化目标：
+
+$$
+\min_v \mathbb{E}\left[\left\|\frac{\partial \varphi_t}{\partial t} - v(x_t,t)\right\|^2\right]
+
+$$
+
+的最优解。换言之，当 $v_\theta(x,t)$ 逼近条件期望 $\mathbb{E}[\dot{X}_t|X_t=x]$ 时，我们的学习会得到最优结果。这正是前述最优速度场的理论依据：
+
+$$
+v_t^*(x) = \mathbb{E}[X_1 - X_0 \mid X_t=x]
+
+$$
+
+---
+
+*引用自原文：[Rectified Flow: Straight is Fast](https://rectifiedflow.github.io/blog/2024/intro/)*
+
+---
+
+# 条件期望与确定性变量的分离
+
+## 性质表述
+
+在条件期望与确定性变量的分离性质中：
+
+$$
+\mathbb{E}[h(Y)g(X)|Y] = h(Y)\mathbb{E}[g(X)|Y] \tag{17}
+
+$$
+
+这里的 $\mathbb{E}[\cdot|Y]$ 表示在给定随机变量 $Y$ 的条件下的期望。具体来说：
+
+- 这是对随机变量 $X$ 的条件分布 $P(X|Y)$ 计算的期望
+- $h(Y)$ 是 $Y$ 的函数
+- $g(X)$ 是 $X$ 的函数
+
+## 推导过程
+
+这个性质的推导基于条件期望的基本定义。对于连续随机变量，条件期望定义为：
+
+$$
+\mathbb{E}[Z|Y=y] = \int z \cdot f_{Z|Y}(z|y) dz \tag{18}
+
+$$
+
+其中 $f_{Z|Y}(z|y)$ 是在 $Y=y$ 条件下 $Z$ 的条件概率密度函数。
+
+现在，让我们考虑 $Z = h(Y)g(X)$，即我们想求 $\mathbb{E}[h(Y)g(X)|Y=y]$：
+
+$$
+\mathbb{E}[h(Y)g(X)|Y=y] = \int h(Y)g(x) \cdot f_{X|Y}(x|y) dx \tag{19}
+
+$$
+
+由于在条件 $Y=y$ 下，$h(Y)$ 是一个确定的值 $h(y)$（不再是随机变量），所以它可以从积分中提出来：
+
+$$
+\mathbb{E}[h(Y)g(X)|Y=y] = h(y) \int g(x) \cdot f_{X|Y}(x|y) dx = h(y) \cdot \mathbb{E}[g(X)|Y=y] \tag{20}
+
+$$
+
+这就得到了 $\mathbb{E}[h(Y)g(X)|Y=y] = h(y)\mathbb{E}[g(X)|Y=y]$。
+
+将 $Y=y$ 推广到随机变量 $Y$，我们得到：
+
+$$
+\mathbb{E}[h(Y)g(X)|Y] = h(Y)\mathbb{E}[g(X)|Y] \tag{21}
+
+$$
+
+## 在我们的推导中的应用
+
+在公式 (6) 到 (7) 的转换中，我们使用了这个性质：
+
+从：
+
+$$
+\mathbb{E}_{x_t}[\phi(x_t)] + \Delta t\mathbb{E}_{x_0,x_1|x_t}\left[\frac{\partial \varphi_t(x_0,x_1)}{\partial t}\cdot\nabla_{x_t}\phi(x_t)\right] + o(\Delta t) \tag{6}
+
+$$
+
+到：
+
+$$
+\mathbb{E}_{x_t}[\phi(x_t)] + \Delta t\mathbb{E}_{x_t}\left[\mathbb{E}_{x_0|x_t}\left[\frac{\partial \varphi_t(x_0,\psi_t(x_0,x_t))}{\partial t}\right]\cdot\nabla_{x_t}\phi(x_t)\right] + o(\Delta t) \tag{7}
+
+$$
+
+这里：
+
+- $Y$ 对应于 $x_t$
+- $X$ 对应于 $x_0$（注意 $x_1$ 可以通过 $x_0$ 和 $x_t$ 确定为 $\psi_t(x_0,x_t)$）
+- $h(Y)$ 对应于 $\nabla_{x_t}\phi(x_t)$，它只依赖于 $x_t$
+- $g(X)$ 对应于 $\frac{\partial \varphi_t(x_0,\psi_t(x_0,x_t))}{\partial t}$
+
+因此，在给定 $x_t$ 的条件下，$\nabla_{x_t}\phi(x_t)$ 是一个确定的值，可以从条件期望中提出来，得到：
+
+$$
+\mathbb{E}_{x_0,x_1|x_t}\left[\frac{\partial \varphi_t(x_0,x_1)}{\partial t}\cdot\nabla_{x_t}\phi(x_t)\right] = \nabla_{x_t}\phi(x_t) \cdot \mathbb{E}_{x_0|x_t}\left[\frac{\partial \varphi_t(x_0,\psi_t(x_0,x_t))}{\partial t}\right] \tag{22}
+
+$$
+
+这正是我们在推导中使用的条件期望与确定性变量分离的性质。
+
+---
+
+# 证明1：最优解证明中的期望性质解析（备份）
+
+在最优解证明过程中，我们使用了期望的一个重要性质，我来详细解释这个性质及其在证明中的应用。
+
+## 期望的线性性质
+
+期望的线性性质是指：对于随机变量 $X$ 和 $Y$，以及常数 $a$ 和 $b$，有：
+
+$$
+\mathbb{E}[aX + bY] = a\mathbb{E}[X] + b\mathbb{E}[Y]
+
+$$
+
+这个性质可以扩展到任意有限个随机变量的线性组合。
+
+## 在最优解证明中的应用
+
+在最优解证明中，我们需要最小化以下形式的期望：
+
+$$
+\mathbb{E}_{x_0,x_1,x_t}\left[\left\| \frac{\partial \varphi_t(x_0,x_1)}{\partial t} - s_\theta(x_t,t) \right\|^2\right]
+
+$$
+
+展开平方项，我们得到：
+
+$$
+\mathbb{E}_{x_0,x_1,x_t}\left[\left\|\frac{\partial \varphi_t(x_0,x_1)}{\partial t}\right\|^2 - 2\left\langle\frac{\partial \varphi_t(x_0,x_1)}{\partial t}, s_\theta(x_t,t)\right\rangle + \left\|s_\theta(x_t,t)\right\|^2\right]
+
+$$
+
+根据期望的线性性质，上式等于：
+
+$$
+\mathbb{E}_{x_0,x_1,x_t}\left[\left\|\frac{\partial \varphi_t(x_0,x_1)}{\partial t}\right\|^2\right] - 2\mathbb{E}_{x_0,x_1,x_t}\left[\left\langle\frac{\partial \varphi_t(x_0,x_1)}{\partial t}, s_\theta(x_t,t)\right\rangle\right] + \mathbb{E}_{x_0,x_1,x_t}\left[\left\|s_\theta(x_t,t)\right\|^2\right]
+
+$$
+
+## 全期望公式的应用
+
+接下来，我们应用全期望公式处理第二项：
+
+$$
+\mathbb{E}_{x_0,x_1,x_t}\left[\left\langle\frac{\partial \varphi_t(x_0,x_1)}{\partial t}, s_\theta(x_t,t)\right\rangle\right] = \mathbb{E}_{x_t}\left[\mathbb{E}_{x_0,x_1|x_t}\left[\left\langle\frac{\partial \varphi_t(x_0,x_1)}{\partial t}, s_\theta(x_t,t)\right\rangle\right]\right]
+
+$$
+
+## 条件期望与确定性变量分离
+
+由于 $s_\theta(x_t,t)$ 只依赖于 $x_t$ 和 $t$，在给定 $x_t$ 的条件下，它是一个确定的值。根据条件期望与确定性变量分离的性质，我们有：
+
+$$
+\mathbb{E}_{x_0,x_1|x_t}\left[\left\langle\frac{\partial \varphi_t(x_0,x_1)}{\partial t}, s_\theta(x_t,t)\right\rangle\right] = \left\langle\mathbb{E}_{x_0,x_1|x_t}\left[\frac{\partial \varphi_t(x_0,x_1)}{\partial t}\right], s_\theta(x_t,t)\right\rangle
+
+$$
+
+这里使用了内积的线性性质和条件期望的性质。
+
+## 最优解的推导
+
+当我们要最小化上述期望表达式时，只有第二项和第三项包含了我们的优化目标 $s_\theta(x_t,t)$。第一项是一个常数，与 $s_\theta$ 无关。
+
+为了最小化整个表达式，我们需要：
+
+1. 最大化第二项：$2\mathbb{E}_{x_0,x_1,x_t}\left[\left\langle\frac{\partial \varphi_t(x_0,x_1)}{\partial t}, s_\theta(x_t,t)\right\rangle\right]$
+2. 最小化第三项：$\mathbb{E}_{x_0,x_1,x_t}\left[\left\|s_\theta(x_t,t)\right\|^2\right]$
+
+根据上面的推导，最优的 $s_\theta(x_t,t)$ 应该等于：
+
+$$
+s_\theta^*(x_t,t) = \mathbb{E}_{x_0,x_1|x_t}\left[\frac{\partial \varphi_t(x_0,x_1)}{\partial t}\right]
+
+$$
+
+这个结果可以通过变分法或直接对 $s_\theta(x_t,t)$ 求导并令其等于零来证明。
+
+## 总结
+
+在最优解证明中，我们主要使用了以下期望性质：
+
+1. 期望的线性性质：$\mathbb{E}[X + Y] = \mathbb{E}[X] + \mathbb{E}[Y]$
+2. 全期望公式：$\mathbb{E}[X] = \mathbb{E}[\mathbb{E}[X|Y]]$
+3. 条件期望与确定性变量分离：$\mathbb{E}[h(Y)g(X)|Y] = h(Y)\mathbb{E}[g(X)|Y]$
+4. 内积的线性性质：$\langle a + b, c \rangle = \langle a, c \rangle + \langle b, c \rangle$
+
+这些性质共同帮助我们推导出了最优的分数匹配模型 $s_\theta^*(x_t,t)$。
+
+---
+
+## 证明2：边缘分布保持性质
+
+边缘分布保持性质指的是：对于 $\forall t$，$Law(Z_t) = Law(X_t)$ 是非线性整流流在(6)中的一般性质，无论插值过程 $X_t$ 是否为直线 [3]。
+
+**定义 3.1** 对于一个路径连续可微的随机过程 $X = \{X_t : t \in [0,1]\}$，其期望速度 $v^X$ 定义为：
+
+$$
+v^X(x,t) = \mathbb{E}[\dot{X_t}|X_t = x], \quad \forall x \in supp(X_t)
+
+$$
+
+对于 $x \notin supp(X_t)$，条件期望未定义，我们任意设定 $v^X(x,t) = 0$。
+
+**定义 3.2** 如果 $v^X$ 是局部有界的，且下面的积分方程存在唯一解，我们称 X 是可整流的：
+
+$$
+Z_t = Z_0 + \int_0^t v^X(Z_s,s)ds, \quad \forall t \in [0,1], \quad Z_0 = X_0
+
+$$
+
+在这种情况下，$Z = \{Z_t : t \in [0,1]\}$ 被称为由 X 诱导的整流流。
+
+**定理 3.3** 假设 X 是可整流的，Z 是其整流流。则对所有 $t \in [0,1]$ 有：$Law(Z_t) = Law(X_t)$。
+
+**证明** 对于任意紧支撑的连续可微测试函数 $h: \mathbb{R}^d \to \mathbb{R}$，我们有：
+
+$$
+\frac{d}{dt}\mathbb{E}[h(X_t)] = \mathbb{E}[\nabla h(X_t)^T \dot{X_t}] = \mathbb{E}[\nabla h(X_t)^T v^X(X_t,t)]
+
+$$
+
+这里我们用到了 $v^X(X_t,t) = \mathbb{E}[\dot{X_t}|X_t]$。根据定义，这等价于 $\pi_t := Law(X_t)$ 在分布意义下求解具有漂移 $v^X_t := v^X(\cdot,t)$ 的连续性方程：
+
+$$
+\dot{\pi_t} + \nabla \cdot (v^X_t \pi_t) = 0
+
+$$
+
+要看到(10)和(11)的等价性，我们可以将(11)两边乘以 h 并积分：
+
+$$
+\begin{aligned}
+0 &= \int h(\dot{\pi_t} + \nabla \cdot (v^X_t \pi_t)) \\
+&= \int h\dot{\pi_t} - \nabla h^T v^X_t \pi_t \\
+&= \frac{d}{dt}\mathbb{E}[h(X_t)] - \mathbb{E}[\nabla h(X_t)^T v^X(X_t,t)]
+\end{aligned}
+
+$$
+
+这里我们用到了分部积分：
+
+$$
+\int h\nabla \cdot (v^X_t \pi_t) = -\int \nabla h^T(v^X_t \pi_t)
+
+$$
+
+因为 $Z_t$ 由相同的速度场 $v^X$ 驱动，其边缘分布 $Law(Z_t)$ 求解相同的方程且具有相同的初始条件($Z_0 = X_0$)。因此，如果方程(11)的解是唯一的，$Law(Z_t)$ 和 $Law(X_t)$ 的等价性就成立了。而(11)解的唯一性等价于 $dZ_t = v^X(Z_t,t)dt$ 解的唯一性，这可以由 Kurtz [37] 的推论 1.3 得到（另见 Ambrosio 和 Crippa [1] 的定理 4.1）。
+
+第二步是利用向量函数求导的性质。原始的性质是复合函数的链式法则，适用于标量函数对向量的求导。
+
+具体来说，对于复合函数 $h(X_t)$，其中 $h: \mathbb{R}^d \to \mathbb{R}$ 是标量函数，$X_t: \mathbb{R} \to \mathbb{R}^d$ 是向量值函数，复合函数对时间 $t$ 的导数遵循以下链式法则：
+
+$$
+\frac{d}{dt}h(X_t) = \sum_{i=1}^d \frac{\partial h(X_t)}{\partial (X_t)_i} \cdot \frac{d(X_t)_i}{dt}
+
+$$
+
+这可以用向量形式更简洁地表示为：
+
+$$
+\frac{d}{dt}h(X_t) = \nabla h(X_t)^{\top} \dot{X}_t
+
+$$
+
+其中：
+
+- $\nabla h(X_t)$ 是函数 $h$ 在点 $X_t$ 处的梯度，即 $\nabla h(X_t) = \left(\frac{\partial h}{\partial x_1}, \frac{\partial h}{\partial x_2}, \ldots, \frac{\partial h}{\partial x_d}\right)^{\top}$ 在 $X_t$ 处的值
+- $\dot{X}_t = \frac{dX_t}{dt}$ 是向量 $X_t$ 对时间 $t$ 的导数

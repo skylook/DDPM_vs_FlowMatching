@@ -18,7 +18,7 @@ $$
 \frac{d}{dt}Z_t = v_t^*(Z_t) \\
 Z_0 \sim \pi_0
 \end{cases} \tag{1}
-
+=
 $$
 
 或者也可以用积分形式表示：
