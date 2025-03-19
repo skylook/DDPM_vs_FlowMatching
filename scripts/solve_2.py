@@ -29,8 +29,10 @@ ax.text(-0.5, 1, '$t=0$', fontsize=14)
 ax.text(-0.5, 9, '$t=1$', fontsize=14)
 ax.text(-0.5, 5, '$t$', fontsize=14)
 
-# 添加水平线表示 t 的时间截面
+# 添加水平线表示时间截面
 ax.axhline(y=5, color='gray', linestyle='--', alpha=0.5)
+ax.axhline(y=1, color='gray', linestyle='--', alpha=0.3)  # t=0的虚线
+ax.axhline(y=9, color='gray', linestyle='--', alpha=0.3)  # t=1的虚线
 
 # 设置焦点
 focus_point_x = 5
@@ -121,9 +123,21 @@ text = ax.text(focus_point_x + 0.5, t - 0.8,
         color='black', fontsize=14, ha='center', va='center', zorder=7)
 text.set_path_effects([path_effects.withStroke(linewidth=3, foreground='white')])
 
-# 绘制生成轨迹
-t_curve = np.linspace(1, 9, 100)
-x_curve = 3 + 0.2*t_curve + 0.05*t_curve**2
+# 绘制生成轨迹（修改后确保经过焦点）
+def generate_trajectory(t, focus_point_x):
+    # 使用分段函数确保轨迹经过焦点
+    t_before = np.linspace(1, 5, 50)
+    t_after = np.linspace(5, 9, 50)
+    
+    # 在焦点之前的轨迹
+    x_before = 2 + (focus_point_x - 2) * ((t_before - 1) / 4)**1.2
+    
+    # 在焦点之后的轨迹
+    x_after = focus_point_x + (8 - focus_point_x) * ((t_after - 5) / 4)**0.8
+    
+    return np.concatenate([t_before, t_after]), np.concatenate([x_before, x_after])
+
+t_curve, x_curve = generate_trajectory(t, focus_point_x)
 ax.plot(x_curve, t_curve, 'g-', linewidth=2.5, label='Generated Trajectory')
 
 # 添加标题和图例
@@ -153,4 +167,4 @@ plt.tight_layout()
 plt.savefig('rectified_flow_vector_field.svg', format='svg', bbox_inches='tight', dpi=300)
 plt.savefig('rectified_flow_vector_field.png', format='png', bbox_inches='tight', dpi=300)
 
-plt.close()
+plt.show()
