@@ -1,4 +1,4 @@
-Rectified Flow 通过将一个平滑连接噪声与数据的插值过程"因果化"（或称为校正）来学习常微分方程 (ODE) 生成模型。该过程自然倾向于产生更直的轨迹，从而使得快速的欧拉离散化成为可能，并且这一过程可以重复进行，以进一步提高轨迹的直性。
+> Rectified Flow 通过将一个平滑连接噪声与数据的插值过程"因果化"（或称为校正）来学习常微分方程 (ODE) 生成模型。该过程自然倾向于产生更直的轨迹，从而使得快速的欧拉离散化成为可能，并且这一过程可以重复进行，以进一步提高轨迹的直线性。
 
 ## 目录
 
@@ -17,27 +17,46 @@ Rectified Flow 通过将一个平滑连接噪声与数据的插值过程"因果�
 
 ![](assets/20250317_144418_diffusion-base-2.png)
 
+那么不论我们设计一个什么样的生成方法，它都需要要做到我们生成的分布 $p_G(x)$ 与数据的真实分布 $p_{data}(x)$ 要尽可能一致。
+
 ### 回顾 DDPM
 
+在 DDPM 中
+但是 DDPM 有两个缺点：
 
-| col1 | DDPM                                     | Rectified Flow |
-| ------ | ------------------------------------------ | ---------------- |
-|      | ![](assets/20250317_175847_ddpm-0-1.jpg) |                |
-|      |                                          |                |
+1. 原理非常复杂，用到了类似随机微分方程（SDE）这类的过程，对于我们来说理解原理是比较复杂的（一看头就大）。
 
-那么我们看到 DDPM 在预测的时候是一步步生成从 $Z_0$（通常要 20 - 1000 步） 逼近 $Z_1$，那么自然的想法就是如何更快地生成呢？
+$$
+\begin{aligned}
+L_\text{VLB} 
+&= \mathbb{E}_{q(\mathbf{x}_{0:T})} \Big[ \log\frac{q(\mathbf{x}_{1:T}\vert\mathbf{x}_0)}{p_\theta(\mathbf{x}_{0:T})} \Big] \\
+&= \mathbb{E}_q \Big[ \log\frac{\prod_{t=1}^T q(\mathbf{x}_t\vert\mathbf{x}_{t-1})}{ p_\theta(\mathbf{x}_T) \prod_{t=1}^T p_\theta(\mathbf{x}_{t-1} \vert\mathbf{x}_t) } \Big] \\
+&= \mathbb{E}_q \Big[ -\log p_\theta(\mathbf{x}_T) + \sum_{t=1}^T \log \frac{q(\mathbf{x}_t\vert\mathbf{x}_{t-1})}{p_\theta(\mathbf{x}_{t-1} \vert\mathbf{x}_t)} \Big] \\
+&= \mathbb{E}_q \Big[ -\log p_\theta(\mathbf{x}_T) + \sum_{t=2}^T \log \frac{q(\mathbf{x}_t\vert\mathbf{x}_{t-1})}{p_\theta(\mathbf{x}_{t-1} \vert\mathbf{x}_t)} + \log\frac{q(\mathbf{x}_1 \vert \mathbf{x}_0)}{p_\theta(\mathbf{x}_0 \vert \mathbf{x}_1)} \Big] \\
+&= \mathbb{E}_q \Big[ -\log p_\theta(\mathbf{x}_T) + \sum_{t=2}^T \log \Big( \frac{q(\mathbf{x}_{t-1} \vert \mathbf{x}_t, \mathbf{x}_0)}{p_\theta(\mathbf{x}_{t-1} \vert\mathbf{x}_t)}\cdot \frac{q(\mathbf{x}_t \vert \mathbf{x}_0)}{q(\mathbf{x}_{t-1}\vert\mathbf{x}_0)} \Big) + \log \frac{q(\mathbf{x}_1 \vert \mathbf{x}_0)}{p_\theta(\mathbf{x}_0 \vert \mathbf{x}_1)} \Big] \\
+&= \mathbb{E}_q \Big[ -\log p_\theta(\mathbf{x}_T) + \sum_{t=2}^T \log \frac{q(\mathbf{x}_{t-1} \vert \mathbf{x}_t, \mathbf{x}_0)}{p_\theta(\mathbf{x}_{t-1} \vert\mathbf{x}_t)} + \sum_{t=2}^T \log \frac{q(\mathbf{x}_t \vert \mathbf{x}_0)}{q(\mathbf{x}_{t-1} \vert \mathbf{x}_0)} + \log\frac{q(\mathbf{x}_1 \vert \mathbf{x}_0)}{p_\theta(\mathbf{x}_0 \vert \mathbf{x}_1)} \Big] \\
+&= \mathbb{E}_q \Big[ -\log p_\theta(\mathbf{x}_T) + \sum_{t=2}^T \log \frac{q(\mathbf{x}_{t-1} \vert \mathbf{x}_t, \mathbf{x}_0)}{p_\theta(\mathbf{x}_{t-1} \vert\mathbf{x}_t)} + \log\frac{q(\mathbf{x}_T \vert \mathbf{x}_0)}{q(\mathbf{x}_1 \vert \mathbf{x}_0)} + \log \frac{q(\mathbf{x}_1 \vert \mathbf{x}_0)}{p_\theta(\mathbf{x}_0 \vert \mathbf{x}_1)} \Big]\\
+&= \mathbb{E}_q \Big[ \log\frac{q(\mathbf{x}_T \vert \mathbf{x}_0)}{p_\theta(\mathbf{x}_T)} + \sum_{t=2}^T \log \frac{q(\mathbf{x}_{t-1} \vert \mathbf{x}_t, \mathbf{x}_0)}{p_\theta(\mathbf{x}_{t-1} \vert\mathbf{x}_t)} - \log p_\theta(\mathbf{x}_0 \vert \mathbf{x}_1) \Big] \\
+&= \mathbb{E}_q [\underbrace{D_\text{KL}(q(\mathbf{x}_T \vert \mathbf{x}_0) \parallel p_\theta(\mathbf{x}_T))}_{L_T} + \sum_{t=2}^T \underbrace{D_\text{KL}(q(\mathbf{x}_{t-1} \vert \mathbf{x}_t, \mathbf{x}_0) \parallel p_\theta(\mathbf{x}_{t-1} \vert\mathbf{x}_t))}_{L_{t-1}} \underbrace{- \log p_\theta(\mathbf{x}_0 \vert \mathbf{x}_1)}_{L_0} ]
+\end{aligned}
+
+$$
+
+2. 生成速度相对较慢，需要一步步生成从 $Z_0$（通常要 20 - 1000 步） 逼近 $Z_1$。
+
+![](assets/20250319_161911_DDPM.png)
+
+那么有没有原理更简单、生成速度更快（最好一步生成）的方法呢？Rectified Flow 就是这样一种方法。
 
 ![](assets/20250317_175755_best-flow-straight.jpg)
 
-最直观的想法当然是走直线最快，如果我们使用的是预测速度的 v-prediction 方式，那么只有在路径为直线时，一步生成式没有误差的，其他路径逼近都有误差。
+Rectified Flow，一个"简简单单走直线"生成模型，是对这些挑战的一个回答：极度简单，一步生成。该方法有以下要点：
 
-Rectified Flow，一个"简简单单走直线“生成模型，是我们对这些挑战的一个回答：极度简单，一步生成。我们的方法有以下要点：
+（1）无需一般扩散模型复杂的推导，代之以一个简单的"沿直线生成"的思想。算法理解上不需要变分法或随机微分方程等基础知识。Rectified Flow方法基于一个简单的常微分方程(ODE)，通过构造一个"尽量走直线"的连续运动系统来产生想要的数据分布。
 
-（1）我们无需一般扩散模型复杂的推导，代之以一个简单的“沿直线生成”的思想。算法理解上不需要变分法或随机微分方程等基础知识。我们的方法是基于一个简单的常微分方程(ODE)，通过构造一个“尽量走直线”的连续运动系统来产生想要的数据分布。
+（2）"尽量走直线"的目的是让模型实现快速生成。通过一个叫"reflow"的方法，可以实现梦想中的"一步生成"：只需一步计算就直接产生高质量的结果，而不需要调用计算量大的数值求解器来迭代式地模拟整个扩散过程。
 
-（2）“尽量走直线”的目的是让我们模型实现快速生成。通过一个叫“reflow”的方法，我们可以实现梦想中的“一步生成”：只需一步计算就直接产生高质量的结果，而不需要调用计算量大的数值求解器来迭代式地模拟整个扩散过程。
-
-（3）通常的扩散模型是把高斯白噪声转换成想要的数据(比如图片)。我们的方法可以把任何一种数据或噪声(比如猫脸照片)转换成另外一种数据(比如人脸照片)。所以我们的方法不仅可以做生成模型，还可以应用于很多更广泛的迁移学习 (比如domain transfer）任务上。
+（3）通常的扩散模型是把高斯白噪声转换成想要的数据(比如图片)。Rectified Flow方法可以把任何一种数据或噪声(比如猫脸照片)转换成另外一种数据(比如人脸照片)。所以该方法不仅可以做生成模型，还可以应用于很多更广泛的迁移学习 (比如domain transfer）任务上。
 
 ## 问题定义：学习流生成模型
 
@@ -52,7 +71,7 @@ Rectified Flow，一个"简简单单走直线“生成模型，是我们对这�
 生成建模可以被表述为寻找一种计算过程，将一个噪声分布（记作 $\pi_0$）转化为一个通过数据观察到的未知数据分布 $\pi_1$。在流模型中，这个过程由常微分方程 (ODE) 表示：
 
 $$
-\dot{Z}_t = v_t(Z_t), \quad \forall t \in [0,1], \quad \text{starting from } Z_0 \sim \pi_0 \tag{1}
+\dot{Z}_t = \frac{dZ_t}{dt} = v_t(Z_t), \quad \forall t \in [0,1], \quad \text{starting from } Z_0 \sim \pi_0 \tag{1}
 
 $$
 
@@ -65,9 +84,9 @@ $$
 
 其中 $\dot{Z}_t = \dfrac{dZ_t}{dt}$ 表示时间导数，而速度场 $v_t(x) = v(x,t)$ 是一个待学习的函数，其目的是确保从 $Z_0 \sim \pi_0$ 出发时，通过公式 $Z_1 = Z_0 + \int_0^1 v_t(Z_t,t)dt $ 积分到 $Z_1$ 能够遵循目标分布 $Z_1 \sim \pi_1$。在这种情况下，我们称随机过程 $Z=\{Z_t\}$ 提供了从 $\pi_0$ 到 $\pi_1$ 的（ODE）传输。
 
-需要注意的是，除平凡情况外，只要存在至少一种这样的传输，就会有**无限多种** ODE 传输从 $\pi_0$ 到 $\pi_1$。因此，明确我们应当偏好哪种类型的 ODE 非常关键。
+需要注意的是，通常会有**无限多种** ODE 传输从 $\pi_0$ 到 $\pi_1$。因此，明确我们应当偏好哪种类型的 ODE 非常关键。
 
-一种选择是偏好那些在推理时**易于求解**的 ODE。实际上，ODE 通常通过**数值方法**进行近似求解，这些方法通常构造 ODE 轨迹的**分段线性**近似。例如，一个常见的数值方法选择是欧拉方法（Eular method，当然还有 RK4 等方法）：
+一种选择是偏好那些在推理时**易于求解**的 ODE。实际上，ODE 的积分过程通常通过**数值方法**进行近似求解，这些方法通常构造 ODE 轨迹的**分段线性**近似。例如，一个常见的数值方法选择是欧拉方法（Eular method，当然还有 RK4 等方法）：
 
 $$
 \hat{Z}_{t+\epsilon} = \hat{Z}_t + \epsilon\, v_t(\hat{Z}_t), \quad \forall t \in \{0, \epsilon, 2\epsilon, \dots, 1\} \tag{2}
@@ -116,32 +135,14 @@ $$
 >    - **独立耦合**：$X_0$ 与 $X_1$ 独立采样（$\gamma = \pi_0 \times \pi_1$），轨迹易交叉（图2a）
 >    - **直线耦合**：存在双射 $X_1 = F(X_0) $，使得所有轨迹为直线（理想情况）
 >
-> **关键耦合类型对比**
+> **本文中涉及的耦合**
 >
 >
-> | 耦合类型          | 数学形式                      | 轨迹特性           | 生成效率         |
-> | ------------------- | ------------------------------- | -------------------- | ------------------ |
-> | **独立耦合**      | $\gamma = \pi_0 \times \pi_1$ | 多交叉，曲率大     | 低（需多步采样） |
-> | **Straight耦合**  | $X_1 = X_0 + v(X_0)$          | 无交叉，完全直线   | 高（单步生成）   |
-> | **Rectified耦合** | 通过Reflow迭代优化            | 渐进直化，交叉减少 | 逐步提升         |
->
-> **耦合优化的核心思想**
-> Rectified Flow通过以下步骤优化耦合：
->
-> 1. **初始独立耦合**：从独立样本对 $(X_0, X_1)$ 开始
-> 2. **校正速度场**：学习 $v_t^*(x) = \mathbb{E}[X_1 - X_0 \mid X_t = x]$
-> 3. **生成新耦合**：通过ODE $\dot{Z}_t = v_t^*(Z_t)$ 得到 $(Z_0, Z_1)$
-> 4. **迭代直化**：将 $(Z_0, Z_1)$ 作为新耦合输入Reflow过程
->
-> **示例**：
-> 若初始耦合为独立分布，经过一次 Rectify 后，新耦合 $(Z_0, Z_1)$ 满足：
->
-> $$
-> Z_1 = Z_0 + \int_0^1 v_t^*(Z_t) dt
->
-> $$
->
-> 这种耦合的直线性显著优于初始独立耦合。
+> | 耦合类型           | 数学形式                      | 轨迹特性           | 生成效率         |
+> | -------------------- | ------------------------------- | -------------------- | ------------------ |
+> | **独立耦合**       | $\gamma = \pi_0 \times \pi_1$ | 多交叉，曲率大     | 低（需多步采样） |
+> | **Straight 耦合**  | $X_1 = X_0 + v(X_0)$          | 无交叉，完全直线   | 高（单步生成）   |
+> | **Rectified 耦合** | 通过 Reflow 迭代优化          | 渐进直化，交叉减少 | 逐步提升         |
 
 ## Rectified Flow
 
@@ -151,11 +152,13 @@ $$
 
 * $X_0$ ：初始分布 $\pi_0$ 中的样本（比如高斯噪声）
 * $X_1$ ：目标分布 $\pi_1$ 中的样本（比如真实图像）
+* $X_t = t X_1 + (1-t) X_0$：线性插值 $t$ 时刻的轨迹
 
 Rectified 耦合：
 
 * $Z_0$ ：与 $X_0$ 具有相同分布的新起点（比如重新在高斯噪声中采样）
-* $Z_1$ ：通过 Rectified Flow 网络预测积分得到的新的对应于 $Z_0$ 的终点
+* $Z_1$ ：通过 Rectified Flow 网络预测速度并积分得到的新的对应于 $Z_0$ 的终点
+* $Z_t = Z_0 + \int_0^t v_s(Z_s,s)ds$：ODE 过程积分 $t$ 时刻的轨迹
 
 对于每一次迭代后的耦合对可以采用上标 $k$ 表示，例如： $Z_0^k$ 和 $Z_1^k$。
 
@@ -211,7 +214,6 @@ Rectified Flow 的构造方法如下：
 ![](assets/20250310_144416_retified-flow-show.gif)
 
 ***图2.** 图中展示了从 $\pi_0$ 到 $\pi_1$ 的 Rectified Flow。蓝色和绿色轨迹表示不同模式的轨迹，便于可视化。*
-
 
 ![](assets/20250319_112204_rectified_flow_vector_field.svg)
 
