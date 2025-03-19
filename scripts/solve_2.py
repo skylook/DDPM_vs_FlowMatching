@@ -31,22 +31,21 @@ ax.text(-0.5, 5, '$t$', fontsize=14)
 
 # 添加水平线表示时间截面
 ax.axhline(y=5, color='gray', linestyle='--', alpha=0.5)
-ax.axhline(y=1, color='gray', linestyle='--', alpha=0.3)  # t=0的虚线
-ax.axhline(y=9, color='gray', linestyle='--', alpha=0.3)  # t=1的虚线
+ax.axhline(y=1, color='gray', linestyle='--', alpha=0.3)
+ax.axhline(y=9, color='gray', linestyle='--', alpha=0.3)
 
 # 设置焦点
 focus_point_x = 5
 t = 5
 
-# 生成确保相交的轨迹点
-# 三条确保相交的轨迹
-x0_intersect = np.array([3, 4, 2])  # 初始点
-x1_intersect = np.array([7, 6, 8])  # 终点
-# 验证这些点在t=5时会相交于x=5
+# 生成确保相交的轨迹点，修改以使角度更分散
+x0_intersect = np.array([2.5, 4, 3])  # 修改初始点
+x1_intersect = np.array([7.5, 6, 7])  # 修改终点
 assert np.allclose((x0_intersect + x1_intersect)/2, focus_point_x)
 
 # 生成其他随机轨迹
 n_random = 7
+np.random.seed(42)  # 设置随机种子以保持一致性
 x0_random = np.random.uniform(1, 9, n_random)
 x1_random = np.random.uniform(1, 9, n_random)
 
@@ -73,44 +72,41 @@ yt_points = t * np.ones_like(xt_points)
 
 # 计算速度向量
 velocities = (x1_points - x0_points) / 8
+intersect_velocities = velocities[:len(x0_intersect)]
 
 # 绘制焦点
 ax.scatter([focus_point_x], [t], color='red', s=100, 
            edgecolor='black', zorder=4, label='Focus Point $x$')
 
-# 只为相交轨迹绘制速度向量
+# 绘制速度向量（增加长度）
 colors = ['#FF5733', '#C70039', '#900C3F']
 for i in range(len(x0_intersect)):
-    # 计算速度向量
     vx = velocities[i]
     vy = 1
     
-    # 归一化并缩放向量
-    scale = 1.0
+    # 增加向量长度
+    scale = 1.5  # 增加到1.5倍
     v_length = np.sqrt(vx**2 + vy**2)
     vx = vx / v_length * scale
     vy = vy / v_length * scale
     
-    # 绘制速度向量
     arrow = FancyArrowPatch((focus_point_x, t),
                            (focus_point_x + vx, t + vy),
                            arrowstyle='-|>', color=colors[i], 
                            linewidth=2, mutation_scale=15, zorder=5)
     ax.add_patch(arrow)
     
-    # 添加速度向量标签
     ax.text(focus_point_x + vx*1.1, t + vy*1.1, 
             f'$v_{{{i+1}}}$',
             color=colors[i], fontsize=10, ha='center', va='center')
 
-# 计算并绘制条件期望速度向量
-mean_vx = np.mean(velocities[:len(x0_intersect)])
+# 严格计算条件期望速度向量
+mean_vx = np.mean(intersect_velocities)
 mean_vy = 1
 v_length = np.sqrt(mean_vx**2 + mean_vy**2)
-mean_vx = mean_vx / v_length * 1.2
-mean_vy = mean_vy / v_length * 1.2
+mean_vx = mean_vx / v_length * 1.8  # 增加到1.8倍
+mean_vy = mean_vy / v_length * 1.8
 
-# 绘制条件期望速度向量
 exp_arrow = FancyArrowPatch((focus_point_x, t),
                            (focus_point_x + mean_vx, t + mean_vy),
                            arrowstyle='-|>', color='gold', 
@@ -123,17 +119,17 @@ text = ax.text(focus_point_x + 0.5, t - 0.8,
         color='black', fontsize=14, ha='center', va='center', zorder=7)
 text.set_path_effects([path_effects.withStroke(linewidth=3, foreground='white')])
 
-# 绘制生成轨迹（修改后确保经过焦点）
+# 改进的生成轨迹函数
 def generate_trajectory(t, focus_point_x):
-    # 使用分段函数确保轨迹经过焦点
     t_before = np.linspace(1, 5, 50)
     t_after = np.linspace(5, 9, 50)
     
+    # 使用更平滑的曲线
     # 在焦点之前的轨迹
-    x_before = 2 + (focus_point_x - 2) * ((t_before - 1) / 4)**1.2
+    x_before = 2 + (focus_point_x - 2) * ((t_before - 1) / 4)**1.1
     
     # 在焦点之后的轨迹
-    x_after = focus_point_x + (8 - focus_point_x) * ((t_after - 5) / 4)**0.8
+    x_after = focus_point_x + (8 - focus_point_x) * ((t_after - 5) / 4)**0.9
     
     return np.concatenate([t_before, t_after]), np.concatenate([x_before, x_after])
 
@@ -148,8 +144,8 @@ ax.legend(loc='upper left', fontsize=12)
 ax.text(2, 3, 'Three trajectories intersect at focus point $x$\nwith different velocities', fontsize=12)
 ax.text(8, 5.2, 'Time slice at $t$', fontsize=12)
 
-# 添加圆圈标注期望计算区域
-circle = Circle((focus_point_x, t), 0.3, fill=False, edgecolor='red', linestyle='--', alpha=0.7)
+# 添加更小的圆圈标注期望计算区域
+circle = Circle((focus_point_x, t), 0.2, fill=False, edgecolor='red', linestyle='--', alpha=0.7)
 ax.add_patch(circle)
 ax.text(focus_point_x + 0.6, t, 'Region where $X_t = x$', fontsize=10, color='red')
 

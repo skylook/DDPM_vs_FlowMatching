@@ -25,7 +25,6 @@ Rectified Flow 通过将一个平滑连接噪声与数据的插值过程"因果�
 |      | ![](assets/20250317_175847_ddpm-0-1.jpg) |                |
 |      |                                          |                |
 
-
 那么我们看到 DDPM 在预测的时候是一步步生成从 $Z_0$（通常要 20 - 1000 步） 逼近 $Z_1$，那么自然的想法就是如何更快地生成呢？
 
 ![](assets/20250317_175755_best-flow-straight.jpg)
@@ -212,6 +211,11 @@ Rectified Flow 的构造方法如下：
 ![](assets/20250310_144416_retified-flow-show.gif)
 
 ***图2.** 图中展示了从 $\pi_0$ 到 $\pi_1$ 的 Rectified Flow。蓝色和绿色轨迹表示不同模式的轨迹，便于可视化。*
+
+
+![](assets/20250319_112204_rectified_flow_vector_field.svg)
+
+图3：示意图 $v_t^*(x) = \mathbb{E}\bigl[X_1 - X_0 \mid X_t = x\bigr].$
 
 **直观解释：**
 

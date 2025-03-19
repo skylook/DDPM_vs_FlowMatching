@@ -1,0 +1,73 @@
+flowchart TB
+      %% 设置样式
+      classDef data fill:#D4E5F7,stroke:#3474A4,stroke-width:2px
+      classDef model fill:#FFE6E6,stroke:#CC0000,stroke-width:2px
+      classDef process fill:#E6FFE6,stroke:#006600,stroke-width:2px
+      classDef decision fill:#F7E6FF,stroke:#660066,stroke-width:2px
+
+      %% 开始
+      Start([开始]) --> Init
+
+      %% 初始化阶段
+      subgraph Init[初始化分布采样]
+          I1[/"从源分布采样 X₀ ~ π₀\n(如高斯噪声或源域图像)"/]:::data
+          I2[/"从目标分布采样 X₁ ~ π₁\n(如真实图像或目标域图像)"/]:::data
+          I1 --> I2
+      end
+
+      %% 迭代优化阶段
+      Init --> IterLoop
+
+      subgraph IterLoop[迭代优化 k 次]
+          %% 插值过程
+          subgraph Interp[插值和路径构建]
+              IP1["构建线性插值轨迹:\nXt = (1-t)X₀⁽ᵏ⁾ + tX₁⁽ᵏ⁾\nt ∈ [0,1]"]:::process
+              IP2["计算期望路径方向:\ndX_t/dt = X₁ - X₀"]:::process
+              IP3["构建训练数据对:\n(Xt, X₁-X₀)"]:::data
+              IP1 --> IP2 --> IP3
+          end
+
+          %% 速度场训练
+          subgraph Train[速度场训练]
+              T1["初始化神经网络速度场\nv_θ(x,t)"]:::model
+              T2["最小二乘优化目标:\nmin ∫E||dX_t/dt - v_θ(Xt,t)||²dt"]:::process
+              T3["获得最优速度场\nv*_t(x) = E[dX_t/dt|Xt=x]"]:::model
+              T1 --> T2 --> T3
+          end
+
+          %% ODE求解
+          subgraph ODE[ODE求解]
+              O1["前向ODE求解:\ndZt = v_θ(Zt,t)dt\nZ₀ = X₀"]:::process
+              O2["或反向ODE求解:\nd𝕏t = -v_θ(𝕏t,t)dt\n𝕏₁ = X₁"]:::process
+              O3["Euler离散化求解:\nZ_(t+ε) = Z_t + εv_θ(Z_t,t)"]:::process
+              O1 --- O2 --> O3
+          end
+
+          %% 更新耦合
+          Update["更新分布耦合:\nX₀⁽ᵏ⁺¹⁾ = X₀⁽ᵏ⁾\nX₁⁽ᵏ⁺¹⁾ = Z₁"]:::data
+          Counter["增加迭代计数:\nk = k + 1"]:::process
+          Check{"是否完成K次\nReflow迭代?"}:::decision
+
+          Interp --> Train --> ODE --> Update
+          Update --> Counter --> Check
+          Check -->|"No (k < K)"| Interp
+          Check -->|"Yes (k = K)"| Final
+      end
+
+      %% 最终生成阶段
+      subgraph Final[最终生成]
+          F1[/"采样新的起点 Z₀ ~ π₀"/]:::data
+          F2["使用训练好的速度场\n单步或多步Euler离散化生成"]:::model
+          F3["生成目标样本 Z₁ ~ π₁"]:::data
+          F1 --> F2 --> F3
+      end
+
+      Final --> End([结束])
+
+      %% 图例
+      subgraph Legend[图例]
+          L1[数据相关操作]:::data
+          L2[模型/网络相关]:::model
+          L3[处理过程]:::process
+          L4{判断节点}:::decision
+      end
