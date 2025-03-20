@@ -3,49 +3,49 @@
 在本节中，我们将严格证明为什么优化目标：
 
 $$
-\mathbb{E}_{x_0\sim \pi_0, x_1\sim \pi_1} \left[\|v_\theta(x_t,t) - \frac{\partial}{\partial t}\varphi_t(x_0,x_1)\|^2\right]
+\mathbb{E}_{X_0\sim \pi_0, X_1\sim \pi_1} \left[\|v_\theta(X_t,t) - \frac{\partial}{\partial t}\varphi_t(X_0,X_1)\|^2\right]
 
 $$
 
 会导出最优速度场 $v_t^*(x) = \mathbb{E}[\dot{X}_t \mid X_t = x]$，从而构建满足所需边际分布的ODE：
 
 $$
-\frac{dx_t}{dt}=v_t^*(x_t)
+\frac{dX_t}{dt}=v_t^*(X_t)
 
 $$
 
 ### 基本假设
 
-- 假设存在轨迹 $x_t=\varphi_t(x_0,x_1)$，这对应于我们的直线插值 $X_t = t X_1 + (1-t) X_0$
-- 假设该轨迹关于 $x_1$ 是可逆的，即可以解出 $x_1=\psi_t(x_0,x_t)$
+- 假设存在轨迹 $X_t=\varphi_t(X_0,X_1)$，这对应于我们的直线插值 $X_t = t X_1 + (1-t) X_0$
+- 假设该轨迹关于 $X_1$ 是可逆的，即可以解出 $X_1=\psi_t(X_0,X_t)$
 
 ### 期望表达式推导
 
 从测试函数的角度开始分析。给定任意光滑测试函数 $\phi$，考虑其在时间 $t+\Delta t$ 处的期望：
 
 $$
-\mathbb{E}_{x_{t+\Delta t}}[\phi(x_{t+\Delta t})] = \mathbb{E}_{x_0,x_1}[\phi(\varphi_{t+\Delta t}(x_0,x_1))]
+\mathbb{E}_{X_{t+\Delta t}}[\phi(X_{t+\Delta t})] = \mathbb{E}_{X_0,X_1}[\phi(\varphi_{t+\Delta t}(X_0,X_1))]
 
 $$
 
 通过泰勒展开到一阶：
 
 $$
-\mathbb{E}_{x_0,x_1}\left[\phi(\varphi_t(x_0,x_1)) + \Delta t\frac{\partial \varphi_t(x_0,x_1)}{\partial t}\cdot\nabla_{\varphi_t}\phi(\varphi_t(x_0,x_1))\right] + o(\Delta t)
+\mathbb{E}_{X_0,X_1}\left[\phi(\varphi_t(X_0,X_1)) + \Delta t\frac{\partial \varphi_t(X_0,X_1)}{\partial t}\cdot\nabla_{\varphi_t}\phi(\varphi_t(X_0,X_1))\right] + o(\Delta t)
 
 $$
 
 这可以重写为：
 
 $$
-\mathbb{E}_{x_0,x_1}[\phi(x_t)] + \Delta t\mathbb{E}_{x_0,x_1}\left[\frac{\partial \varphi_t(x_0,x_1)}{\partial t}\cdot\nabla_{x_t}\phi(x_t)\right] + o(\Delta t)
+\mathbb{E}_{X_0,X_1}[\phi(X_t)] + \Delta t\mathbb{E}_{X_0,X_1}\left[\frac{\partial \varphi_t(X_0,X_1)}{\partial t}\cdot\nabla_{X_t}\phi(X_t)\right] + o(\Delta t)
 
 $$
 
-注意到 $x_t = \varphi_t(x_0,x_1)$，上式可表示为：
+注意到 $X_t = \varphi_t(X_0,X_1)$，上式可表示为：
 
 $$
-\mathbb{E}_{x_t}[\phi(x_t)] + \Delta t\mathbb{E}_{x_0,x_t}\left[\frac{\partial \varphi_t(x_0,x_1)}{\partial t}\cdot\nabla_{x_t}\phi(x_t)\right] + o(\Delta t)
+\mathbb{E}_{X_t}[\phi(X_t)] + \Delta t\mathbb{E}_{X_0,X_t}\left[\frac{\partial \varphi_t(X_0,X_1)}{\partial t}\cdot\nabla_{X_t}\phi(X_t)\right] + o(\Delta t)
 
 $$
 
@@ -70,30 +70,30 @@ $$
 > \mathbb{E}[h(Y)g(X)|Y] = h(Y)\mathbb{E}[g(X)|Y]
 > $$
 > 
-> 在我们的推导中，将 $\mathbb{E}_{x_0,x_t}[\frac{\partial \varphi_t}{\partial t}\cdot\nabla_{x_t}\phi(x_t)]$ 改写为条件期望形式时，我们应用了上述性质：
+> 在我们的推导中，将 $\mathbb{E}_{X_0,X_t}[\frac{\partial \varphi_t}{\partial t}\cdot\nabla_{X_t}\phi(X_t)]$ 改写为条件期望形式时，我们应用了上述性质：
 >
-> - 首先，注意到 $\nabla_{x_t}\phi(x_t)$ 只依赖于 $x_t$，因此在给定 $x_t$ 的条件下是确定的
+> - 首先，注意到 $\nabla_{X_t}\phi(X_t)$ 只依赖于 $X_t$，因此在给定 $X_t$ 的条件下是确定的
 >
 > - 应用性质3，可将其从条件期望中分离出来：
 >
 > $$
 >
-> \mathbb{E}_{x_0,x_t}\left[\frac{\partial \varphi_t}{\partial t}\cdot\nabla_{x_t}\phi(x_t)\right] = \mathbb{E}_{x_t}\left[\mathbb{E}_{x_0|x_t}\left[\frac{\partial \varphi_t}{\partial t}\right]\cdot\nabla_{x_t}\phi(x_t)\right]
+> \mathbb{E}_{X_0,X_t}\left[\frac{\partial \varphi_t}{\partial t}\cdot\nabla_{X_t}\phi(X_t)\right] = \mathbb{E}_{X_t}\left[\mathbb{E}_{X_0|X_t}\left[\frac{\partial \varphi_t}{\partial t}\right]\cdot\nabla_{X_t}\phi(X_t)\right]
 > $$
-> 这一变换是推导ODE形式的关键步骤，它使我们能够将条件期望 $\mathbb{E}_{x_0|x_t}[\frac{\partial \varphi_t}{\partial t}]$ 识别为最优速度场。
+> 这一变换是推导ODE形式的关键步骤，它使我们能够将条件期望 $\mathbb{E}_{X_0|X_t}[\frac{\partial \varphi_t}{\partial t}]$ 识别为最优速度场。
 >
 
 利用条件期望的性质，可以将表达式改写为：
 
 $$
-\mathbb{E}_{x_t}[\phi(x_t)] + \Delta t\mathbb{E}_{x_t}\left[\mathbb{E}_{x_0|x_t}\left[\frac{\partial \varphi_t(x_0,x_1)}{\partial t}\right]\cdot\nabla_{x_t}\phi(x_t)\right] + o(\Delta t)
+\mathbb{E}_{X_t}[\phi(X_t)] + \Delta t\mathbb{E}_{X_t}\left[\mathbb{E}_{X_0|X_t}\left[\frac{\partial \varphi_t(X_0,X_1)}{\partial t}\right]\cdot\nabla_{X_t}\phi(X_t)\right] + o(\Delta t)
 
 $$
 
 根据泰勒展开的逆向应用，这等价于：
 
 $$
-\mathbb{E}_{x_t}\left[\phi\left(x_t + \Delta t\mathbb{E}_{x_0|x_t}\left[\frac{\partial \varphi_t(x_0,x_1)}{\partial t}\right]\right)\right] + o(\Delta t)
+\mathbb{E}_{X_t}\left[\phi\left(X_t + \Delta t\mathbb{E}_{X_0|X_t}\left[\frac{\partial \varphi_t(X_0,X_1)}{\partial t}\right]\right)\right] + o(\Delta t)
 
 $$
 
@@ -102,21 +102,21 @@ $$
 由于上述等式对任意测试函数 $\phi$ 成立，我们可以得到：
 
 $$
-x_{t+\Delta t} \approx x_t + \Delta t\mathbb{E}_{x_0|x_t}\left[\frac{\partial \varphi_t(x_0,x_1)}{\partial t}\right]
+X_{t+\Delta t} \approx X_t + \Delta t\mathbb{E}_{X_0|X_t}\left[\frac{\partial \varphi_t(X_0,X_1)}{\partial t}\right]
 
 $$
 
 当 $\Delta t \rightarrow 0$ 时，这正是如下ODE：
 
 $$
-\frac{dx_t}{dt} = \mathbb{E}_{x_0|x_t}\left[\frac{\partial \varphi_t(x_0,x_1)}{\partial t}\right]
+\frac{dX_t}{dt} = \mathbb{E}_{X_0|X_t}\left[\frac{\partial \varphi_t(X_0,X_1)}{\partial t}\right]
 
 $$
 
-对于线性插值 $\varphi_t(x_0,x_1) = t x_1 + (1-t) x_0$，我们有 $\frac{\partial \varphi_t}{\partial t} = x_1 - x_0$，因此：
+对于线性插值 $\varphi_t(X_0,X_1) = t X_1 + (1-t) X_0$，我们有 $\frac{\partial \varphi_t}{\partial t} = X_1 - X_0$，因此：
 
 $$
-\frac{dx_t}{dt} = \mathbb{E}_{x_0|x_t}[x_1 - x_0] = v_t^*(x_t)
+\frac{dX_t}{dt} = \mathbb{E}_{X_0|X_t}[X_1 - X_0] = v_t^*(X_t)
 
 $$
 
@@ -129,10 +129,10 @@ $$
 
 $$
 
-这表明条件期望 $\mathbb{E}_{x_0|x_t}[\frac{\partial \varphi_t}{\partial t}]$ 正是优化目标：
+这表明条件期望 $\mathbb{E}_{X_0|X_t}[\frac{\partial \varphi_t}{\partial t}]$ 正是优化目标：
 
 $$
-\min_v \mathbb{E}\left[\left\|\frac{\partial \varphi_t}{\partial t} - v(x_t,t)\right\|^2\right]
+\min_v \mathbb{E}\left[\left\|\frac{\partial \varphi_t}{\partial t} - v(X_t,t)\right\|^2\right]
 
 $$
 
