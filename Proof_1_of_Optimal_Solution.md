@@ -7,7 +7,7 @@ $$
 
 $$
 
-会导出最优速度场 $v_t^*(x) = \mathbb{E}[\dot{X}_t \mid X_t = x]$，从而构建满足所需边际分布的ODE：
+会导出最优 Vector Field $v_t^*(x) = \mathbb{E}[\dot{X}_t \mid X_t = x]$，从而构建满足所需 Marginal Preservation 的 ODE Process：
 
 $$
 \frac{dX_t}{dt}=v_t^*(X_t)
@@ -16,7 +16,7 @@ $$
 
 ### 基本假设
 
-- 假设存在轨迹 $X_t=\varphi_t(X_0,X_1)$，这对应于我们的直线插值 $X_t = t X_1 + (1-t) X_0$
+- 假设存在轨迹 $X_t=\varphi_t(X_0,X_1)$，这对应于我们的 Linear Interpolation $X_t = t X_1 + (1-t) X_0$
 - 假设该轨迹关于 $X_1$ 是可逆的，即可以解出 $X_1=\psi_t(X_0,X_t)$
 
 ### 期望表达式推导
@@ -64,23 +64,19 @@ $$
 > $$
 > \mathbb{E}[a g_1(X) + b g_2(X)|Y] = a\mathbb{E}[g_1(X)|Y] + b\mathbb{E}[g_2(X)|Y]
 > $$
-> 3. **条件期望与确定性变量的分离**：若 $h(Y)$ 是 $Y$ 的函数，则
 >
+> 3. **条件期望的分离性质**：如果 $g(X,Y) = h(X)k(Y)$，则
 > $$
-> \mathbb{E}[h(Y)g(X)|Y] = h(Y)\mathbb{E}[g(X)|Y]
+> \mathbb{E}[h(X)k(Y)|Y] = k(Y)\mathbb{E}[h(X)|Y]
 > $$
-> 
-> 在我们的推导中，将 $\mathbb{E}_{X_0,X_t}[\frac{\partial \varphi_t}{\partial t}\cdot\nabla_{X_t}\phi(X_t)]$ 改写为条件期望形式时，我们应用了上述性质：
 >
-> - 首先，注意到 $\nabla_{X_t}\phi(X_t)$ 只依赖于 $X_t$，因此在给定 $X_t$ 的条件下是确定的
->
-> - 应用性质3，可将其从条件期望中分离出来：
+> 在我们的推导中，关键的变换是：
 >
 > $$
 >
 > \mathbb{E}_{X_0,X_t}\left[\frac{\partial \varphi_t}{\partial t}\cdot\nabla_{X_t}\phi(X_t)\right] = \mathbb{E}_{X_t}\left[\mathbb{E}_{X_0|X_t}\left[\frac{\partial \varphi_t}{\partial t}\right]\cdot\nabla_{X_t}\phi(X_t)\right]
 > $$
-> 这一变换是推导ODE形式的关键步骤，它使我们能够将条件期望 $\mathbb{E}_{X_0|X_t}[\frac{\partial \varphi_t}{\partial t}]$ 识别为最优速度场。
+> 这一变换是推导ODE形式的关键步骤，它使我们能够将条件期望 $\mathbb{E}_{X_0|X_t}[\frac{\partial \varphi_t}{\partial t}]$ 识别为最优 Vector Field。
 >
 
 利用条件期望的性质，可以将表达式改写为：
@@ -106,14 +102,14 @@ X_{t+\Delta t} \approx X_t + \Delta t\mathbb{E}_{X_0|X_t}\left[\frac{\partial \v
 
 $$
 
-当 $\Delta t \rightarrow 0$ 时，这正是如下ODE：
+当 $\Delta t \rightarrow 0$ 时，这正是如下 ODE Process：
 
 $$
 \frac{dX_t}{dt} = \mathbb{E}_{X_0|X_t}\left[\frac{\partial \varphi_t(X_0,X_1)}{\partial t}\right]
 
 $$
 
-对于线性插值 $\varphi_t(X_0,X_1) = t X_1 + (1-t) X_0$，我们有 $\frac{\partial \varphi_t}{\partial t} = X_1 - X_0$，因此：
+对于 Linear Interpolation $\varphi_t(X_0,X_1) = t X_1 + (1-t) X_0$，我们有 $\frac{\partial \varphi_t}{\partial t} = X_1 - X_0$，因此：
 
 $$
 \frac{dX_t}{dt} = \mathbb{E}_{X_0|X_t}[X_1 - X_0] = v_t^*(X_t)
@@ -136,7 +132,7 @@ $$
 
 $$
 
-的最优解。换言之，当 $v_\theta(x,t)$ 逼近条件期望 $\mathbb{E}[\dot{X}_t|X_t=x]$ 时，我们的学习会得到最优结果。这正是前述最优速度场的理论依据：
+的最优解。换言之，当 $v_\theta(x,t)$ 逼近条件期望 $\mathbb{E}[\dot{X}_t|X_t=x]$ 时，我们的学习会得到最优结果。这正是前述最优 Vector Field 的理论依据：
 
 $$
 v_t^*(x) = \mathbb{E}[X_1 - X_0 \mid X_t=x]

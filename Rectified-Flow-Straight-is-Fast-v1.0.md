@@ -21,27 +21,11 @@
 
 ### 回顾 DDPM
 
-在 DDPM 中
-但是 DDPM 有两个缺点：
+传统 DDPM 有两个问题：
 
 1. 原理非常复杂，用到了类似随机微分方程（SDE）这类的过程，对于我们来说理解原理是比较复杂的（一看头就大）。
 
-$$
-\begin{aligned}
-L_\text{VLB} 
-&= \mathbb{E}_{q(\mathbf{x}_{0:T})} \Big[ \log\frac{q(\mathbf{x}_{1:T}\vert\mathbf{x}_0)}{p_\theta(\mathbf{x}_{0:T})} \Big] \\
-&= \mathbb{E}_q \Big[ \log\frac{\prod_{t=1}^T q(\mathbf{x}_t\vert\mathbf{x}_{t-1})}{ p_\theta(\mathbf{x}_T) \prod_{t=1}^T p_\theta(\mathbf{x}_{t-1} \vert\mathbf{x}_t) } \Big] \\
-&= \mathbb{E}_q \Big[ -\log p_\theta(\mathbf{x}_T) + \sum_{t=1}^T \log \frac{q(\mathbf{x}_t\vert\mathbf{x}_{t-1})}{p_\theta(\mathbf{x}_{t-1} \vert\mathbf{x}_t)} \Big] \\
-&= \mathbb{E}_q \Big[ -\log p_\theta(\mathbf{x}_T) + \sum_{t=2}^T \log \frac{q(\mathbf{x}_t\vert\mathbf{x}_{t-1})}{p_\theta(\mathbf{x}_{t-1} \vert\mathbf{x}_t)} + \log\frac{q(\mathbf{x}_1 \vert \mathbf{x}_0)}{p_\theta(\mathbf{x}_0 \vert \mathbf{x}_1)} \Big] \\
-&= \mathbb{E}_q \Big[ -\log p_\theta(\mathbf{x}_T) + \sum_{t=2}^T \log \Big( \frac{q(\mathbf{x}_{t-1} \vert \mathbf{x}_t, \mathbf{x}_0)}{p_\theta(\mathbf{x}_{t-1} \vert\mathbf{x}_t)}\cdot \frac{q(\mathbf{x}_t \vert \mathbf{x}_0)}{q(\mathbf{x}_{t-1}\vert\mathbf{x}_0)} \Big) + \log \frac{q(\mathbf{x}_1 \vert \mathbf{x}_0)}{p_\theta(\mathbf{x}_0 \vert \mathbf{x}_1)} \Big] \\
-&= \mathbb{E}_q \Big[ -\log p_\theta(\mathbf{x}_T) + \sum_{t=2}^T \log \frac{q(\mathbf{x}_{t-1} \vert \mathbf{x}_t, \mathbf{x}_0)}{p_\theta(\mathbf{x}_{t-1} \vert\mathbf{x}_t)} + \sum_{t=2}^T \log \frac{q(\mathbf{x}_t \vert \mathbf{x}_0)}{q(\mathbf{x}_{t-1} \vert \mathbf{x}_0)} + \log\frac{q(\mathbf{x}_1 \vert \mathbf{x}_0)}{p_\theta(\mathbf{x}_0 \vert \mathbf{x}_1)} \Big] \\
-&= \mathbb{E}_q \Big[ -\log p_\theta(\mathbf{x}_T) + \sum_{t=2}^T \log \frac{q(\mathbf{x}_{t-1} \vert \mathbf{x}_t, \mathbf{x}_0)}{p_\theta(\mathbf{x}_{t-1} \vert\mathbf{x}_t)} + \log\frac{q(\mathbf{x}_T \vert \mathbf{x}_0)}{q(\mathbf{x}_1 \vert \mathbf{x}_0)} + \log \frac{q(\mathbf{x}_1 \vert \mathbf{x}_0)}{p_\theta(\mathbf{x}_0 \vert \mathbf{x}_1)} \Big]\\
-&= \mathbb{E}_q \Big[ \log\frac{q(\mathbf{x}_T \vert \mathbf{x}_0)}{p_\theta(\mathbf{x}_T)} + \sum_{t=2}^T \log \frac{q(\mathbf{x}_{t-1} \vert \mathbf{x}_t, \mathbf{x}_0)}{p_\theta(\mathbf{x}_{t-1} \vert\mathbf{x}_t)} - \log p_\theta(\mathbf{x}_0 \vert \mathbf{x}_1) \Big] \\
-&= \mathbb{E}_q [\underbrace{D_\text{KL}(q(\mathbf{x}_T \vert \mathbf{x}_0) \parallel p_\theta(\mathbf{x}_T))}_{L_T} + \sum_{t=2}^T \underbrace{D_\text{KL}(q(\mathbf{x}_{t-1} \vert \mathbf{x}_t, \mathbf{x}_0) \parallel p_\theta(\mathbf{x}_{t-1} \vert\mathbf{x}_t))}_{L_{t-1}} \underbrace{- \log p_\theta(\mathbf{x}_0 \vert \mathbf{x}_1)}_{L_0} ]
-\end{aligned}
-
-$$
-
+![](assets/20250320_153932_ddpm-math.jpg)
 2. 生成速度相对较慢，需要一步步生成从 $Z_0$（通常要 20 - 1000 步） 逼近 $Z_1$。
 
 ![](assets/20250319_161911_DDPM.png)
@@ -70,12 +54,14 @@ Rectified Flow，一个"简简单单走直线"生成模型，是对这些挑战�
 
 $$
 \dot{Z}_t = \frac{dZ_t}{dt} = v_t^*(Z_t), \quad \forall t \in [0,1], \quad \text{starting from } Z_0 \sim \pi_0 \tag{1}
+
 $$
 
 积分形式就是：
 
 $$
 Z_t = Z_0 + \int_0^t v_s^*(Z_s)ds, \quad \forall t \in [0,1], \quad Z_0 = X_0
+
 $$
 
 其中 $\dot{Z}_t = \dfrac{dZ_t}{dt}$ 表示时间导数，而速度场 $v_t^*(x) = v^*(x,t)$ 是一个待学习的函数，其目的是确保从 $Z_0 \sim \pi_0$ 出发时，通过公式 $Z_1 = Z_0 + \int_0^1 v_t^*(Z_t)dt $ 积分到 $Z_1$ 能够遵循目标分布 $Z_1 \sim \pi_1$。在这种情况下，我们称随机过程 $Z=\{Z_t\}$ 提供了从 $\pi_0$ 到 $\pi_1$ 的（ODE）传输。
@@ -86,6 +72,7 @@ $$
 
 $$
 \hat{Z}_{t+\epsilon} = \hat{Z}_t + \epsilon\, v_t^*(\hat{Z}_t), \quad \forall t \in \{0, \epsilon, 2\epsilon, \dots, 1\} \tag{2}
+
 $$
 
 其中 $ \epsilon > 0 $ 是步长。调整步长 $ \epsilon $ 会在精度和计算成本之间构成权衡：较小的 $ \epsilon $ 能提高精度，但需要更多的计算步骤。因此，我们应追求那些即便在较大步长下也能精确近似的 ODE。
@@ -100,6 +87,7 @@ $$
 
 $$
 Z_t = t\,Z_1 + (1-t)\,Z_0, \quad \implies \quad \dot{Z}_t = Z_1 - Z_0
+
 $$
 
 这些 ODE 被称为**直线传输**，它们能够实现可在一步内模拟的**快速**生成模型。我们将所得的对 $ (Z_0,Z_1) $ 称为 $ \pi_0 $ 与 $ \pi_1 $ 的直线耦合。尽管在实际中可能无法达到完美直线性，但我们可以尽量使 ODE 轨迹直，从而最大化计算效率。
@@ -141,6 +129,9 @@ $$
 ## Rectified Flow
 
 ### 符号定义
+
+
+![](assets/20250320_211557_rectified_flow_X_Z.svg)
 
 原始样本：
 
@@ -211,16 +202,15 @@ v_t^*(x) = \mathbb{E}\bigl[\dot{X}_t \mid X_t = x\bigr].
 
 $$
 
-且在这种直线插值中，这一结果与 $t$ 无关。
-
 问题2：从最优解看来，$v_t^*(x)$ 肯定是不会交叉的，且也不可能保证和原始样本一样是直线差值。
 
 ![](assets/20250310_144416_retified-flow-show.gif)
 
 ***图2.** 图中展示了从 $\pi_0$ 到 $\pi_1$ 的 Rectified Flow。蓝色和绿色轨迹表示不同模式的轨迹，便于可视化。*
 
-图2(a) 秒数据了 $X_t$ 线性插值的轨迹（直线，且可能存在相交）
-图2(b) 展示了通过 $v_t^*(x)$ 的速度场重构的 Rectified Flow 轨迹（不相交，也不一定为直线）
+* 图2(a) 展示了 $X_t$ 线性插值的轨迹（直线，且可能存在相交）
+* 图2(b) 展示了通过 $v_t^*(x)$ 的速度场重构的 Rectified Flow 轨迹（不相交，也不一定为直线）
+* 图2(c) 是我们希望实现的理想的一一对应的直线路径，那在这种情况下因为是直线我们可以 ”一步生成“。
 
 看起来轨迹都不一样，那么 $X_t$ 和 $Z_t$ 的分布是一样的吗（即 $p(x_t) = p(z_t)$）？
 
@@ -237,7 +227,7 @@ $$
 
 ## Reflow
 
-尽管 Rectified Flow 倾向于生成更直的轨迹，但这些轨迹并不完全是直线。正如图2(a)所示，在插值轨迹的交叉点处，流仍可能发生转弯。那么，我们如何进一步提升流，使得轨迹更直，从而加速推理？
+尽管 Rectified Flow 倾向于生成更直的轨迹，但这些轨迹并不完全是直线。正如图2(b)所示，在插值轨迹的交叉点处，流仍可能发生转弯。那么，我们如何进一步提升流，使得轨迹更直，从而加速推理？
 
 一个关键的见解是，Rectified Flow 生成的起止对 $ (Z_0, Z_1) $（也称为 **Rectified Coupling**）相比原始耦合 $ (X_0, X_1) $ 更优、更"直"。这是因为如果我们用直线插值重新连接 $ Z_0 $ 与 $ Z_1 $，那么得到的轨迹将交叉得更少。因此，通过基于重新插值耦合训练一个新的 Rectified Flow，我们能够进一步使轨迹直化，从而实现更快的采样推理。
 
@@ -267,6 +257,9 @@ $$
 这意味着在前 $ K $ 次迭代中，直性量度的平均值以 $ \mathcal{O}(1/K) $ 的速率衰减。
 
 需要注意的是，Reflow 可以从任一耦合 $ (X_0, X_1) $ 开始，因此它提供了一种普适的直化（加速）方法，同时保留边际分布不变。
+
+
+![](assets/20250320_212210_reflow-more-straight.jpg)
 
 > **Reflow 与捷径学习。** 直观上，Reflow 类似于人类的捷径学习：一旦首次解决了某个问题，我们便学会了直接走捷径，从而在下一次能够更快地得到解答。
 

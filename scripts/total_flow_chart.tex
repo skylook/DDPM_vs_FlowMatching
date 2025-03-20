@@ -1,0 +1,36 @@
+\documentclass{standalone}
+    \draw[arrow] (check.south) -- node[right] {Yes} (gen1.north);
+    
+    % Loop arrow
+    \draw[arrow] (check.west) -- ++(-5,0) -- 
+        node[left] {No} ++(0,6) -- ++(.5,0) -- (path.west);
+    
+    % Bottom connections
+    \draw[arrow] (gen1.south) -- (gen2.north);
+    \draw[arrow] (gen2.south) -- (gen3.north);
+    
+    % Background boxes with adjusted spacing
+    \begin{pgfonlayer}{background}
+        \node[fit=(path)(velocity)(network)(ode)(update)(check),
+              draw,rounded corners,fill=gray!5,inner sep=0.8cm] (train_box) {};
+        \node[above] at (train_box.north) {\large Reflow Iteration};
+        
+        \node[fit=(gen1)(gen2)(gen3),
+              draw,rounded corners,fill=gray!5,inner sep=0.4cm] (test_box) {};
+    \end{pgfonlayer}
+    
+    % Legend - Horizontal layout at bottom
+    \node[legend_item, fill=blue!10] at (-4,-14) (legend1) {Data\\Distributions};
+    \node[legend_item, fill=green!10, right=0.3cm of legend1] (legend2) {Processing\\Steps};
+    \node[legend_item, fill=red!10, right=0.3cm of legend2] (legend3) {Model\\Operations};
+    \node[legend_item, fill=purple!10, right=0.3cm of legend3] (legend4) {Decision\\Points};
+    \node[legend_item, fill=yellow!10, draw=black, dashed, right=0.3cm of legend4] (legend5) {Notes};
+    
+    % Legend box
+    \begin{pgfonlayer}{background}
+        \node[fit=(legend1)(legend2)(legend3)(legend4)(legend5),
+              draw,rounded corners,fill=white,inner sep=0.3cm] (legend_box) {};
+        \node[above] at (legend_box.north) {\small Legend};
+    \end{pgfonlayer}
+\end{tikzpicture}
+\end{document}
