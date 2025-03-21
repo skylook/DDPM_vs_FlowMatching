@@ -6,6 +6,7 @@
 - 问题：学习流生成模型
 - Rectified Flow
 - Reflow
+- 整体流程
 
 ## 概述
 
@@ -130,7 +131,6 @@ $$
 
 ### 符号定义
 
-
 ![](assets/20250320_211557_rectified_flow_X_Z.svg)
 
 原始样本：
@@ -195,6 +195,7 @@ Rectified Flow 的构造方法如下：
 那我们整个 Rectified Flow 的训练方法就定义完了，看起来非常简单。但很明显我们会想到下面的两个问题：
 
 问题1：通过 Loss 优化得到的最优解 $v_t^*(x)$ 应该是什么呢？
+
 在后面的证明中，我们会经过推导得到这一优化问题的最优解为条件均值：
 
 $$
@@ -231,6 +232,12 @@ $$
 
 一个关键的见解是，Rectified Flow 生成的起止对 $ (Z_0, Z_1) $（也称为 **Rectified Coupling**）相比原始耦合 $ (X_0, X_1) $ 更优、更"直"。这是因为如果我们用直线插值重新连接 $ Z_0 $ 与 $ Z_1 $，那么得到的轨迹将交叉得更少。因此，通过基于重新插值耦合训练一个新的 Rectified Flow，我们能够进一步使轨迹直化，从而实现更快的采样推理。
 
+> **Reflow 与捷径学习**：直观上，Reflow 类似于人类的捷径学习：一旦首次解决了某个问题，我们便学会了直接走捷径，从而在下一次能够更快地得到解答。
+
+### Reflow 算法
+
+Reflow 的核心思想是将一个流的输出作为下一个流的输入，通过迭代提高直线性。
+
 形式上，我们递归应用 $ \texttt{Rectify}(\cdot) $ 操作，从 $ (Z_0^0, Z_1^0) = (X_0, X_1) $ 开始，得到一系列 Rectified Flow：
 
 $$
@@ -240,34 +247,49 @@ $$
 
 其中 $ \texttt{Interp}(Z_0^k, Z_1^k) $ 表示利用 $ (Z_0^k, Z_1^k) $ 构造的插值过程。我们将 $ \{Z_t^k\} $ 称为第 $ k $ 个 Rectified Flow，简称为 **$ k $-Rectified Flow**，它是由 $ (X_0, X_1) $ 诱导得到的。
 
-这一 Reflow 过程被证明在以下意义上能使轨迹更直。我们定义流的直性量度为
+完整的 Reflow 算法将在"整体流程"部分的算法 3 中详细描述。
+
+
+
+### 流的直线性度量
+
+这一 Reflow 过程被证明能使轨迹更直。为了量化流的直线性，我们定义以下度量：
 
 $$
-S(\{Z_t\}) = \int_0^1 \mathbb{E}\Bigl[\|Z_1 - Z_0 - \dot{Z}_t\|^2\Bigr] dt,
+S(Z_t) = \mathbb{E}\left[\int_0^1 \left\|\frac{d Z_t}{dt} - (Z_1 - Z_0)\right\|^2 dt\right] \tag{12}
 
 $$
 
-其中 $ S(\{Z_t\}) = 0 $ 表示轨迹完全为直线。研究表明，
+当 $S(Z_t) = 0$ 时，流完全由直线组成。
+
+研究表明：
 
 $$
 \mathbb{E}_{k \sim \mathrm{Unif}(\{1,\dots,K\})}\Bigl[S(\{Z_t^k\})\Bigr] = \mathcal{O}\Bigl(\frac{1}{K}\Bigr)
 
 $$
 
-这意味着在前 $ K $ 次迭代中，直性量度的平均值以 $ \mathcal{O}(1/K) $ 的速率衰减。
+这意味着在前 $ K $ 次迭代中，直线性度量的平均值以 $ \mathcal{O}(1/K) $ 的速率衰减。
 
 需要注意的是，Reflow 可以从任一耦合 $ (X_0, X_1) $ 开始，因此它提供了一种普适的直化（加速）方法，同时保留边际分布不变。
 
 
-![](assets/20250320_212210_reflow-more-straight.jpg)
+### 一步采样
 
-> **Reflow 与捷径学习。** 直观上，Reflow 类似于人类的捷径学习：一旦首次解决了某个问题，我们便学会了直接走捷径，从而在下一次能够更快地得到解答。
+Reflow 的一个重要应用是实现"一步采样"。当流足够直时，我们可以使用一个大步长（$\epsilon = 1$）直接从 $Z_0$ 生成 $Z_1$：
+
+$$
+Z_1 \approx Z_0 + v_\theta(Z_0, 0) \tag{14}
+
+$$
+
+这大大加速了生成过程，可以接近图 2(c) 的理想结果，使得 Rectified Flow 在实际应用中更具吸引力。
 
 ## 整体流程
 
-### Rectified Flow 算法
+### Rectified Flow 与 Reflow 算法
 
-基于上述理论，我们可以总结 Rectified Flow 的训练和采样算法：
+基于上述理论，我们可以总结 Rectified Flow 的训练、采样和 Reflow 迭代算法：
 
 **算法 1: Rectified Flow 训练**
 
@@ -286,7 +308,22 @@ $$
    - 更新 $Z_{t+\epsilon} = Z_t + \epsilon \cdot v_\theta(Z_t, t)$
 4. **输出**: 生成样本 $Z_1 \sim \pi_1$
 
-### 理论分析
+**算法 3: Reflow 完整流程**
+
+1. **初始化**: 设置 $k = 0$，初始耦合 $(Z_0^0, Z_1^0) = (X_0, X_1)$
+2. **重复直到满足终止条件**:
+   - **训练阶段**:
+     - 使用算法 1 基于当前耦合 $(Z_0^k, Z_1^k)$ 训练速度场 $v_\theta^{k+1}$
+   - **采样阶段**:
+     - 使用算法 2 和训练好的速度场 $v_\theta^{k+1}$ 生成新的耦合 $(Z_0^{k+1}, Z_1^{k+1})$
+   - **评估直线性**:
+     - 计算新流的直线性度量 $S(Z_t^{k+1})$
+     - 如果 $S(Z_t^{k+1})$ 小于阈值或迭代次数达到上限，则停止迭代
+   - 更新 $k = k + 1$
+3. **最终输出**:
+   - 最优速度场 $v_\theta^k$（可用于一步采样 $Z_1 \approx Z_0 + v_\theta^k(Z_0, 0)$）
+
+### 理论性质
 
 在 Rectified Flow 中，我们学习到的 ODE 流 $\{Z_t\}$ 具有以下重要性质：
 
@@ -295,131 +332,13 @@ $$
 
 这些性质使 Rectified Flow 成为一种有效的生成模型方法，特别是当我们需要快速生成样本时。
 
-## Reflow：通过迭代提高直线性
+最终整体流程图如下：
+![](figures/Reflow_flow.png)
 
-尽管 Rectified Flow 已经能够产生比原始插值更直的轨迹，但我们可以通过一个称为 **Reflow** 的迭代过程进一步提高轨迹的直线性。
-
-### 流的直线性度量
-
-为了量化流的直线性，我们定义以下度量：
-
-$$
-S(Z_t) = \mathbb{E}\left[\int_0^1 \left\|\frac{d Z_t}{dt} - (Z_1 - Z_0)\right\|^2 dt\right] \tag{12}
-
-$$
-
-当 $S(Z_t) = 0$ 时，流完全由直线组成。
-
-### Reflow 算法
-
-Reflow 的核心思想是将一个流的输出作为下一个流的输入，通过迭代提高直线性：
-
-**算法 3: Reflow 迭代**
-
-1. **初始化**：设置初始流 $Z^{(0)} = X$（即直线插值）
-2. **对 $k = 1, 2, ..., K$ 执行**:
-   - 学习速度场 $v^{(k)}$ 以拟合 $Z^{(k-1)}$ 的时间导数
-   - 使用 $v^{(k)}$ 生成新流 $Z^{(k)}$
-3. **输出**：最终流 $Z^{(K)}$
-
-理论上可以证明，随着迭代次数增加，流的直线性单调提高：
-
-$$
-S(Z^{(k+1)}) \leq S(Z^{(k)}), \quad \forall k \geq 0 \tag{13}
-
-$$
-
-并且在理想情况下，当 $k \to \infty$ 时，$S(Z^{(k)}) \to 0$，即流趋向于完全由直线组成。
-
-### 一步采样
-
-Reflow 的一个重要应用是实现"一步采样"。当流足够直时，我们可以使用一个大步长（$\epsilon = 1$）直接从 $Z_0$ 生成 $Z_1$：
-
-$$
-Z_1 \approx Z_0 + v_\theta(Z_0, 0) \tag{14}
-
-$$
-
-这大大加速了生成过程，使得 Rectified Flow 在实际应用中更具吸引力。
-
-```mermaid
-flowchart TB
-      %% 设置样式
-      classDef data fill:#D4E5F7,stroke:#3474A4,stroke-width:2px
-      classDef model fill:#FFE6E6,stroke:#CC0000,stroke-width:2px
-      classDef process fill:#E6FFE6,stroke:#006600,stroke-width:2px
-      classDef decision fill:#F7E6FF,stroke:#660066,stroke-width:2px
-
-      %% 开始
-      Start([开始]) --> Init
-
-      %% 初始化阶段
-      subgraph Init[初始化分布采样]
-          I1[/"从源分布采样 X₀ ~ π₀\n(如高斯噪声或源域图像)"/]:::data
-          I2[/"从目标分布采样 X₁ ~ π₁\n(如真实图像或目标域图像)"/]:::data
-          I1 --> I2
-      end
-
-      %% 迭代优化阶段
-      Init --> IterLoop
-
-      subgraph IterLoop[迭代优化 k 次]
-          %% 插值过程
-          subgraph Interp[插值和路径构建]
-              IP1["构建线性插值轨迹:\nXt = (1-t)X₀⁽ᵏ⁾ + tX₁⁽ᵏ⁾\nt ∈ [0,1]"]:::process
-              IP2["计算期望路径方向:\ndX_t/dt = X₁ - X₀"]:::process
-              IP3["构建训练数据对:\n(Xt, X₁-X₀)"]:::data
-              IP1 --> IP2 --> IP3
-          end
-
-          %% 速度场训练
-          subgraph Train[速度场训练]
-              T1["初始化神经网络速度场\nv_θ(x,t)"]:::model
-              T2["最小二乘优化目标:\nmin ∫E||dX_t/dt - v_θ(Xt,t)||²dt"]:::process
-              T3["获得最优速度场\nv*_t(x) = E[dX_t/dt|Xt=x]"]:::model
-              T1 --> T2 --> T3
-          end
-
-          %% ODE求解
-          subgraph ODE[ODE求解]
-              O1["前向ODE求解:\ndZt = v_θ(Zt,t)dt\nZ₀ = X₀"]:::process
-              O2["或反向ODE求解:\nd𝕏t = -v_θ(𝕏t,t)dt\n𝕏₁ = X₁"]:::process
-              O3["Euler离散化求解:\nZ_(t+ε) = Z_t + εv_θ(Z_t,t)"]:::process
-              O1 --- O2 --> O3
-          end
-
-          %% 更新耦合
-          Update["更新分布耦合:\nX₀⁽ᵏ⁺¹⁾ = X₀⁽ᵏ⁾\nX₁⁽ᵏ⁺¹⁾ = Z₁"]:::data
-          Counter["增加迭代计数:\nk = k + 1"]:::process
-          Check{"是否完成K次\nReflow迭代?"}:::decision
-
-          Interp --> Train --> ODE --> Update
-          Update --> Counter --> Check
-          Check -->|"No (k < K)"| Interp
-          Check -->|"Yes (k = K)"| Final
-      end
-
-      %% 最终生成阶段
-      subgraph Final[最终生成]
-          F1[/"采样新的起点 Z₀ ~ π₀"/]:::data
-          F2["使用训练好的速度场\n单步或多步Euler离散化生成"]:::model
-          F3["生成目标样本 Z₁ ~ π₁"]:::data
-          F1 --> F2 --> F3
-      end
-
-      Final --> End([结束])
-
-      %% 图例
-      subgraph Legend[图例]
-          L1[数据相关操作]:::data
-          L2[模型/网络相关]:::model
-          L3[处理过程]:::process
-          L4{判断节点}:::decision
-      end
-```
+**图7：** Rectified Flow 和 Reflow 的整体流程图。
 
 ## 实验效果
 
 ![](assets/20250310_112636_reflow-example.jpg)
 
-图5：1-Rectified Flow 与 2-Rectified Flow
+**图8：** 1-Rectified Flow 与 2-Rectified Flow 的生成效果对比。
