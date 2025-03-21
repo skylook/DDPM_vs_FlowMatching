@@ -16,3 +16,6 @@ flow_samples/
 ddpm_samples/
 ddpm_trajectories/
 flow_trajectories/
+Proof_1_of_Optimal_Solution.pdf
+Proof_2_of_Marginal_Preservation.pdf
+Rectified-Flow-Straight-is-Fast-v1.0.pdf
