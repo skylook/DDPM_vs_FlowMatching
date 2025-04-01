@@ -64,13 +64,20 @@ $$
 
 $$
 \begin{aligned}
-\frac{\mathrm{d}}{\mathrm{d}t}\mathbb{E}_{X_0,X_1}[h(X_t)] &= \mathbb{E}_{X_0,X_1}\left[\frac{\mathrm{d}}{\mathrm{d}t}h(X_t)\right] & \text{(期望与导数交换)} \\
-&= \mathbb{E}_{X_0,X_1}[\nabla h(X_t)^T \dot{X_t}] & \text{(链式法则)} \\
-&= \mathbb{E}_{X_0,X_1}[\nabla h(X_t)^T (X_1 - X_0)] & \text{(代入 $\dot{X_t} = X_1 - X_0$)} \\
-&= \mathbb{E}_{X_t}[\nabla h(X_t)^T \mathbb{E}_{X_0,X_1|X_t}[X_1 - X_0|X_t]] & \text{(条件期望的塔性质)} \\
-&= \mathbb{E}_{X_t}[\nabla h(X_t)^T v_t^*(X_t)] & \text{(向量场定义)}
+\frac{\mathrm{d}}{\mathrm{d}t}\mathbb{E}_{X_0,X_1}[h(X_t)] &\overset{①}{=} \mathbb{E}_{X_0,X_1}\left[\frac{\mathrm{d}}{\mathrm{d}t}h(X_t)\right] \\
+&\overset{②}{=} \mathbb{E}_{X_0,X_1}[\nabla h(X_t)^T \dot{X_t}] \\
+&\overset{③}{=} \mathbb{E}_{X_0,X_1}[\nabla h(X_t)^T (X_1 - X_0)] \\
+&\overset{④}{=} \mathbb{E}_{X_t}[\nabla h(X_t)^T \mathbb{E}_{X_0,X_1|X_t}[X_1 - X_0|X_t]] \\
+&\overset{⑤}{=} \mathbb{E}_{X_t}[\nabla h(X_t)^T v_t^*(X_t)]
 \end{aligned} \tag{5}
 $$
+
+其中：
+① 期望与导数交换，基于适当的可积性条件
+② 应用链式法则计算复合函数的导数
+③ 代入线性插值过程的时间导数 $\dot{X_t} = X_1 - X_0$
+④ 应用条件期望的塔性质
+⑤ 根据向量场定义 $v_t^*(X_t) = \mathbb{E}_{X_0,X_1|X_t}[X_1 - X_0|X_t]$
 
 其中 $v_t^*(X_t) = \mathbb{E}_{X_0,X_1|X_t}[\dot{X_t}|X_t] = \mathbb{E}_{X_0,X_1|X_t}[X_1 - X_0|X_t]$ 是条件期望形式的向量场，与 定义 1 中的 $v_t^*(x)$ 完全一致。
 
