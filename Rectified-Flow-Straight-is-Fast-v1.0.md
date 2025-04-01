@@ -58,18 +58,16 @@ Rectified Flow，一个"简简单单走直线"生成模型，是对这些挑战�
 生成建模可以被表述为寻找一种计算过程，将一个噪声分布（记作 $\pi_0$）转化为一个通过数据观察到的未知数据分布 $\pi_1$。在流模型中，这个过程由常微分方程 (ODE) 表示：
 
 $$
-\dot{Z}_t = \frac{dZ_t}{dt} = v_t^*(Z_t), \quad \forall t \in [0,1], \quad \text{starting from } Z_0 \sim \pi_0 \tag{1}
-
+\dot{Z}_t = \frac{\mathrm{d}Z_t}{\mathrm{d}t} = v_t^*(Z_t), \quad \forall t \in [0,1], \quad \text{starting from } Z_0 \sim \pi_0 \tag{1}
 $$
 
 积分形式就是：
 
 $$
-Z_t = Z_0 + \int_0^t v_s^*(Z_s)ds, \quad \forall t \in [0,1], \quad Z_0 = X_0
-
+Z_t = Z_0 + \int_0^t v_s^*(Z_s)\mathrm{d}s, \quad \forall t \in [0,1], \quad Z_0 = X_0
 $$
 
-其中 $\dot{Z}_t = \dfrac{dZ_t}{dt}$ 表示时间导数，而速度场 $v_t^*(x) = v^*(x,t)$ 是一个待学习的函数，其目的是确保从 $Z_0 \sim \pi_0$ 出发时，通过公式 $Z_1 = Z_0 + \int_0^1 v_t^*(Z_t)dt $ 积分到 $Z_1$ 能够遵循目标分布 $Z_1 \sim \pi_1$。在这种情况下，我们称随机过程 $Z=\{Z_t\}$ 提供了从 $\pi_0$ 到 $\pi_1$ 的（ODE）传输。
+其中 $\dot{Z}_t = \dfrac{\mathrm{d}Z_t}{\mathrm{d}t}$ 表示时间导数，而速度场 $v_t^*(x) = v^*(x,t)$ 是一个待学习的函数，其目的是确保从 $Z_0 \sim \pi_0$ 出发时，通过公式 $Z_1 = Z_0 + \int_0^1 v_t^*(Z_t)\mathrm{d}t $ 积分到 $Z_1$ 能够遵循目标分布 $Z_1 \sim \pi_1$。在这种情况下，我们称随机过程 $Z=\{Z_t\}$ 提供了从 $\pi_0$ 到 $\pi_1$ 的（ODE）传输。
 
 需要注意的是，通常会有**无限多种** ODE 传输从 $\pi_0$ 到 $\pi_1$。因此，明确我们应当偏好哪种类型的 ODE 非常关键。
 
@@ -77,7 +75,6 @@ $$
 
 $$
 \hat{Z}_{t+\epsilon} = \hat{Z}_t + \epsilon\, v_t^*(\hat{Z}_t), \quad \forall t \in \{0, \epsilon, 2\epsilon, \dots, 1\} \tag{2}
-
 $$
 
 其中 $ \epsilon > 0 $ 是步长。调整步长 $ \epsilon $ 会在精度和计算成本之间构成权衡：较小的 $ \epsilon $ 能提高精度，但需要更多的计算步骤。因此，我们应追求那些即便在较大步长下也能精确近似的 ODE。
@@ -91,8 +88,7 @@ $$
 理想情况是当 ODE 轨迹完全为直线时，欧拉法可实现**零离散化误差**，而不受步长选择的影响。在这种情况下，经时间重参数化后，ODE 应满足：
 
 $$
-Z_t = t\,Z_1 + (1-t)\,Z_0, \quad \implies \quad \dot{Z}_t = Z_1 - Z_0
-
+Z_t = t\,Z_1 + (1-t)\,Z_0, \quad \implies \quad \dot{Z}_t = \frac{\mathrm{d}Z_t}{\mathrm{d}t} = Z_1 - Z_0
 $$
 
 这些 ODE 被称为**直线传输**，它们能够实现可在一步内模拟的**快速**生成模型。我们将所得的对 $ (Z_0,Z_1) $ 称为 $ \pi_0 $ 与 $ \pi_1 $ 的直线耦合。尽管在实际中可能无法达到完美直线性，但我们可以尽量使 ODE 轨迹直，从而最大化计算效率。
@@ -102,7 +98,6 @@ $$
 >
 > $$
 > \int \gamma(x_0, x_1) dx_1 = \pi_0(x_0), \quad \int \gamma(x_0, x_1) dx_0 = \pi_1(x_1)
->
 > $$
 >
 > 即边缘分布分别为 $\pi_0$ 和 $\pi_1$。
@@ -114,7 +109,6 @@ $$
 >
 >    $$
 >    X_t = t X_1 + (1-t) X_0
->
 >    $$
 > 2. **影响ODE直线性**
 >    不同的耦合会导致不同的插值轨迹形态：
@@ -124,12 +118,11 @@ $$
 >
 > **本文中涉及的耦合**
 >
->
-> | 耦合类型           | 数学形式                      | 轨迹特性           | 生成效率         |
-> | -------------------- | ------------------------------- | -------------------- | ------------------ |
+> | 耦合类型                 | 数学形式                        | 轨迹特性           | 生成效率         |
+> | ------------------------ | ------------------------------- | ------------------ | ---------------- |
 > | **独立耦合**       | $\gamma = \pi_0 \times \pi_1$ | 多交叉，曲率大     | 低（需多步采样） |
 > | **Straight 耦合**  | $X_1 = X_0 + v(X_0)$          | 无交叉，完全直线   | 高（单步生成）   |
-> | **Rectified 耦合** | 通过 Reflow 迭代优化          | 渐进直化，交叉减少 | 逐步提升         |
+> | **Rectified 耦合** | 通过 Reflow 迭代优化            | 渐进直化，交叉减少 | 逐步提升         |
 
 ## Rectified Flow
 
@@ -165,7 +158,6 @@ Rectified Flow 的构造方法如下：
 
   $$
   X_t = t\,X_1 + (1-t)\,X_0
-
   $$
 
   这种插值过程 $\{X_t\}$ 是通过 **"锚定-桥接"** 方式生成的：首先采样端点 $X_0$ 与 $X_1$，然后生成连接这两者的中间轨迹。
@@ -175,7 +167,6 @@ Rectified Flow 的构造方法如下：
 
   $$
   \frac{dZ_t}{dt}=v_t^*(Z_t)
-
   $$
 * **速度场估计：**
 
@@ -183,14 +174,12 @@ Rectified Flow 的构造方法如下：
 
   $$
   \mathcal{L}=\min_v \int_0^1 \mathbb{E}\Bigl[\|\dot{X}_t - v_t^*(X_t)\|^2\Bigr] dt.
-
   $$
 
   其中：
 
   $$
   \dot{X}_t = X_1 - X_0
-
   $$
 
   > **符号说明。** 一个随机过程 $X_t = X(t,\omega)$ 是关于时间 $t$ 及随机种子 $\omega$ 的可测函数（随机种子的分布记作 $\mathbb{P}$）。在这里，端点 $(X_0,X_1)$ 就构成了随机种子；而 $\dot{X}_t = \partial_t X(t,\omega)$ 是关于 $t$ 的偏导数，同样依赖于同一随机种子。通常我们在书写时会省略随机种子的符号。
@@ -204,7 +193,6 @@ Rectified Flow 的构造方法如下：
 
 $$
 v_t^*(x) = \mathbb{E}\bigl[\dot{X}_t \mid X_t = x\bigr].
-
 $$
 
 🚀️ 问题2：$X_t$ 和 $Z_t$ 的分布是一样的吗（即 $p(x_t) = p(z_t)$）？
@@ -248,7 +236,6 @@ Reflow 的核心思想是将一个流的输出作为下一个流的输入，通�
 
 $$
 \texttt{Reflow:} \quad \{Z_t^{k+1}\} = \texttt{Rectify}(\texttt{Interp}(Z_0^k, Z_1^k)),
-
 $$
 
 其中 $ \texttt{Interp}(Z_0^k, Z_1^k) $ 表示利用 $ (Z_0^k, Z_1^k) $ 构造的插值过程。我们将 $ \{Z_t^k\} $ 称为第 $ k $ 个 Rectified Flow，简称为 **$ k $-Rectified Flow**，它是由 $ (X_0, X_1) $ 诱导得到的。
@@ -260,8 +247,7 @@ $$
 这一 Reflow 过程被证明能使轨迹更直。为了量化流的直线性，我们定义以下度量：
 
 $$
-S(Z_t) = \mathbb{E}\left[\int_0^1 \left\|\frac{d Z_t}{dt} - (Z_1 - Z_0)\right\|^2 dt\right] \tag{12}
-
+S(Z_t) = \mathbb{E}\left[\int_0^1 \left\|\frac{\mathrm{d} Z_t}{\mathrm{d}t} - (Z_1 - Z_0)\right\|^2 \mathrm{d}t\right] \tag{12}
 $$
 
 当 $S(Z_t) = 0$ 时，流完全由直线组成。
@@ -270,7 +256,6 @@ $$
 
 $$
 \mathbb{E}_{k \sim \mathrm{Unif}(\{1,\dots,K\})}\Bigl[S(\{Z_t^k\})\Bigr] = \mathcal{O}\Bigl(\frac{1}{K}\Bigr)
-
 $$
 
 这意味着在前 $ K $ 次迭代中，直线性度量的平均值以 $ \mathcal{O}(1/K) $ 的速率衰减。
@@ -283,7 +268,6 @@ Reflow 的一个重要应用是实现"一步采样"。当流足够直时，我�
 
 $$
 Z_1 \approx Z_0 + v_\theta(Z_0, 0) \tag{14}
-
 $$
 
 这大大加速了生成过程，可以接近图 2(c) 的理想结果，使得 Rectified Flow 在实际应用中更具吸引力。

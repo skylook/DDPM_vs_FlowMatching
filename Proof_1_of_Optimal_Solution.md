@@ -3,13 +3,13 @@
 在本节中，我们将严格证明为什么优化目标：
 
 $$
-\mathcal{L} = \min_{v} \mathbb{E}_{X_0\sim \pi_0, X_1\sim \pi_1} \left[\|v_\theta(X_t,t) - \frac{\partial}{\partial t}\varphi_t(X_0,X_1)\|^2\right] \tag{1}
+\mathcal{L} = \min_{v} \mathbb{E}_{X_0\sim \pi_0, X_1\sim \pi_1} \left[\int_0^1\|v_\theta(X_t,t) - \frac{\partial}{\partial t}\varphi_t(X_0,X_1)\|^2\mathrm{d}t\right] \tag{1}
 $$
 
 会导出最优 Vector Field $v_t^*(x) = \mathbb{E}[\dot{X}_t \mid X_t = x]$，从而构建满足所需 Marginal Preservation 的 ODE Process：
 
 $$
-\frac{dX_t}{dt}=v_t^*(X_t) \tag{2}
+\frac{\mathrm{d}X_t}{\mathrm{d}t}=v_t^*(X_t) \tag{2}
 $$
 
 ### 基本假设
@@ -19,7 +19,7 @@ $$
 
 ### 期望表达式推导
 
-从测试函数的角度开始分析。给定任意光滑测试函数 $\phi$，考虑其在时间 $t+\Delta t$ 处的期望：
+从测试函数的角度开始分析。给定任意光滑测试函数 $\phi \in C_c^\infty(\mathbb{R}^d)$（具有紧支撑的无限可微函数空间），考虑其在时间 $t+\Delta t$ 处的期望：
 
 $$
 \mathbb{E}_{X_{t+\Delta t}}[\phi(X_{t+\Delta t})] = \mathbb{E}_{X_0,X_1}[\phi(\varphi_{t+\Delta t}(X_0,X_1))] \tag{3}
@@ -45,7 +45,7 @@ $$
 
 ### 条件期望引入
 
-> **全期望公式（Law of Total Expectation）**：对于任意随机变量 $X$ 和 $Y$ 有
+> **全期望公式（Law of Total Expectation）**：在概率空间 $(\Omega, \mathcal{F}, P)$ 中，对于任意可积随机变量 $X$ 和 $Y$，即 $X, Y \in L^1(\Omega, \mathcal{F}, P)$，有
 >
 > $$
 > \mathbb{E}[X] = \mathbb{E}[\mathbb{E}[X|Y]] \tag{7}
@@ -81,7 +81,7 @@ $$
 当 $\Delta t \rightarrow 0$ 时，这正是如下 ODE Process：
 
 $$
-\lim_{\Delta t \to 0} \frac{ X_{t+\Delta t} - X_t }{\Delta t} = \frac{dX_t}{dt} = \mathbb{E}_{X_0|X_t}\left[\frac{\partial \varphi_t(X_0,X_t)}{\partial t}\right] \tag{12}
+\lim_{\Delta t \to 0} \frac{ X_{t+\Delta t} - X_t }{\Delta t} = \frac{\mathrm{d}X_t}{\mathrm{d}t} = \mathbb{E}_{X_0|X_t}\left[\frac{\partial \varphi_t(X_0,X_t)}{\partial t}\right] \tag{12}
 $$
 
 对于线性插值 $\varphi_t(X_0,X_1) = t X_1 + (1-t) X_0$，我们有 $\frac{\partial \varphi_t}{\partial t} = X_1 - X_0$，因此：

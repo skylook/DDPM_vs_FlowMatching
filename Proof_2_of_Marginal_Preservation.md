@@ -9,7 +9,7 @@
 1. $(X_0, X_1) \sim \gamma$，其中 $\gamma$ 是从 $\pi_0$ 到 $\pi_1$ 的耦合
 2. 对于任意 $t \in [0,1]$，条件期望 $v_t^*(x) = \mathbb{E}[X_1 - X_0 | X_t = x]$ 存在且良定义
 
-其中要求 $(X_0,X_1)$ 的联合分布满足适当的可积性条件，以确保条件期望 Well Defined。
+其中要求 $(X_0,X_1)$ 的联合分布满足适当的可积性条件，即 $\mathbb{E}[\|X_0\|^2] < \infty$ 和 $\mathbb{E}[\|X_1\|^2] < \infty$，以确保条件期望 Well Defined。
 
 ### 定义2：Rectified Flow
 
@@ -17,7 +17,7 @@
 
 $$
 \begin{cases}
-\frac{d}{dt}Z_t = v_t^*(Z_t) \\
+\frac{\mathrm{d}}{\mathrm{d}t}Z_t = v_t^*(Z_t) \\
 Z_0 \sim \pi_0
 \end{cases} \tag{1}
 $$
@@ -44,7 +44,7 @@ $$
 
 ### 步骤 1：引入测试函数
 
-为了证明两个分布相等，我们引入测试函数方法。考虑任意紧支撑的连续可微函数 $h: \mathbb{R}^d \rightarrow \mathbb{R}$，如果对于所有这样的函数 $h$，都有：
+为了证明两个分布相等，我们引入测试函数方法。考虑任意紧支撑的无限可微函数 $h \in C_c^\infty(\mathbb{R}^d)$，如果对于所有这样的函数 $h$，都有：
 
 $$
 \mathbb{E}[h(X_t)] = \mathbb{E}[h(Z_t)] \tag{4}
@@ -64,7 +64,7 @@ $$
 
 $$
 \begin{aligned}
-\frac{d}{dt}\mathbb{E}_{X_0,X_1}[h(X_t)] &= \mathbb{E}_{X_0,X_1}\left[\frac{d}{dt}h(X_t)\right] & \text{(期望与导数交换)} \\
+\frac{\mathrm{d}}{\mathrm{d}t}\mathbb{E}_{X_0,X_1}[h(X_t)] &= \mathbb{E}_{X_0,X_1}\left[\frac{\mathrm{d}}{\mathrm{d}t}h(X_t)\right] & \text{(期望与导数交换)} \\
 &= \mathbb{E}_{X_0,X_1}[\nabla h(X_t)^T \dot{X_t}] & \text{(链式法则)} \\
 &= \mathbb{E}_{X_0,X_1}[\nabla h(X_t)^T (X_1 - X_0)] & \text{(代入 $\dot{X_t} = X_1 - X_0$)} \\
 &= \mathbb{E}_{X_t}[\nabla h(X_t)^T \mathbb{E}_{X_0,X_1|X_t}[X_1 - X_0|X_t]] & \text{(条件期望的塔性质)} \\
@@ -75,8 +75,8 @@ $$
 其中 $v_t^*(X_t) = \mathbb{E}_{X_0,X_1|X_t}[\dot{X_t}|X_t] = \mathbb{E}_{X_0,X_1|X_t}[X_1 - X_0|X_t]$ 是条件期望形式的向量场，与 定义 1 中的 $v_t^*(x)$ 完全一致。
 
 注意：期望与导数交换的合法性基于以下条件：
-1. $h$ 是紧支撑的连续可微函数，因此其梯度有界
-2. $X_t$ 的轨道满足适当的可积性条件
+1. $h \in C_c^\infty(\mathbb{R}^d)$ 是紧支撑的无限可微函数，因此其梯度有界
+2. $X_t$ 的轨道满足适当的可积性条件，即 $\mathbb{E}[\|X_t\|^2] < \infty$ 对所有 $t \in [0,1]$ 成立
 
 #### 2.2 引入连续性方程
 
@@ -93,19 +93,19 @@ $$
 将测试函数 $h(x)$ 与连续性方程相乘并在整个空间积分：
 
 $$
-0 = \int_{\mathbb{R}^d} h(x)(\frac{\partial}{\partial t} p_t^X(x) + \nabla_x \cdot (v_t^*(x) p_t^X(x)))dx \tag{7}
+0 = \int_{\mathbb{R}^d} h(x)\left(\frac{\partial}{\partial t} p_t^X(x) + \nabla_x \cdot (v_t^*(x) p_t^X(x))\right)\mathrm{d}x \tag{7}
 $$
 
 前半部分挪到左边，将公式分成左右两部分：
 
 $$
-\int_{\mathbb{R}^d} h(x)(\frac{\partial}{\partial t} p_t^X(x)) dx = - \int_{\mathbb{R}^d} h(x) \nabla_x \cdot (v_t^*(x) p_t^X(x))dx \tag{8}
+\int_{\mathbb{R}^d} h(x)\left(\frac{\partial}{\partial t} p_t^X(x)\right) \mathrm{d}x = - \int_{\mathbb{R}^d} h(x) \nabla_x \cdot (v_t^*(x) p_t^X(x))\mathrm{d}x \tag{8}
 $$
 
 左边部分可以直接写成期望形式：
 
 $$
-\int_{\mathbb{R}^d} h(x)(\frac{\partial}{\partial t} p_t^X(x)) dx = \frac{d}{d t}\int_{\mathbb{R}^d} h(x)p_t^X(x) dx = \frac{d}{d t} \mathbb{E}_{X_t} [h(X_t)] \tag{9}
+\int_{\mathbb{R}^d} h(x)\left(\frac{\partial}{\partial t} p_t^X(x)\right) \mathrm{d}x = \frac{\mathrm{d}}{\mathrm{d} t}\int_{\mathbb{R}^d} h(x)p_t^X(x) \mathrm{d}x = \frac{\mathrm{d}}{\mathrm{d} t} \mathbb{E}_{X_t} [h(X_t)] \tag{9}
 $$
 
 对右边部分应用散度定理：
@@ -115,7 +115,7 @@ $$
 > 在高维空间 $\mathbb{R}^d$ 中，散度定理给出：
 >
 > $$
-> \int_\Omega h(x)\nabla \cdot F(x)\,dx = \int_{\partial\Omega} h(x)F(x)\cdot n\,dS - \int_\Omega \nabla h(x)\cdot F(x)\,dx \tag{10}
+> \int_\Omega h(x)\nabla \cdot F(x)\,\mathrm{d}x = \int_{\partial\Omega} h(x)F(x)\cdot n\,\mathrm{d}S - \int_\Omega \nabla h(x)\cdot F(x)\,\mathrm{d}x \tag{10}
 > $$
 >
 > 其中：
@@ -129,28 +129,27 @@ $$
 
 - 向量场 $F(x) = v_t^*(x)p_t^X(x)$
 - 积分区域 $\Omega = \mathbb{R}^d$
-- $h(x)$ 是紧支撑的测试函数
+- $h(x) \in C_c^\infty(\mathbb{R}^d)$ 是紧支撑的无限可微测试函数
 
 应用散度定理：
 
 $$
 \begin{aligned}
--\int_{\mathbb{R}^d} h(x)\nabla_x \cdot (v_t^*(x) p_t^X(x))dx &= -\left(\underbrace{\int_{\partial\mathbb{R}^d} h(x)(v_t^*(x)p_t^X(x))\cdot n\,dS}_{=0 \text{ (由于h是紧支撑)}} - \int_{\mathbb{R}^d} \nabla h(x)^T(v_t^*(x)p_t^X(x))dx\right) \\
-&= \int_{\mathbb{R}^d} \nabla h(x)^T(v_t^*(x)p_t^X(x))dx \\
-&= \int_{\mathbb{R}^d} \nabla p_t^X(x) [h(x)^T(v_t^*(x))]dx \\
+-\int_{\mathbb{R}^d} h(x)\nabla_x \cdot (v_t^*(x) p_t^X(x))\mathrm{d}x &= -\left(\underbrace{\int_{\partial\mathbb{R}^d} h(x)(v_t^*(x)p_t^X(x))\cdot n\,\mathrm{d}S}_{=0 \text{ (由于h是紧支撑)}} - \int_{\mathbb{R}^d} \nabla h(x)^T(v_t^*(x)p_t^X(x))\mathrm{d}x\right) \\
+&= \int_{\mathbb{R}^d} \nabla h(x)^T(v_t^*(x)p_t^X(x))\mathrm{d}x \\
 &= \mathbb{E}_{X_t}[\nabla h(X_t)^T v_t^*(X_t)] \tag{11}
 \end{aligned}
 $$
 
 注意：
 
-1. 由于 $h$ 是紧支撑函数，存在紧集 $K$ 使得 $h$ 在 $K$ 外恒为零。当考虑 $\mathbb{R}^d$ 的边界（即无穷远处）时，$h$ 的值为零，因此边界积分项自然消失。
-2. 最后一步利用了 $p_t^X(x)$ 是 $X_t$ 的概率密度函数的性质
+1. 由于 $h \in C_c^\infty(\mathbb{R}^d)$ 是紧支撑函数，存在紧集 $K \subset \mathbb{R}^d$ 使得 $h$ 在 $K$ 外恒为零。当考虑 $\mathbb{R}^d$ 的边界（即无穷远处）时，$h$ 的值为零，因此边界积分项自然消失。
+2. 最后一步利用了 $p_t^X(x)$ 是 $X_t$ 的概率密度函数的性质，即 $\mathbb{E}_{X_t}[g(X_t)] = \int_{\mathbb{R}^d} g(x)p_t^X(x)\mathrm{d}x$
 
-再将公式 (11) 代回 (8) 这表明随机过程视角（期望的导数）和PDE视角（连续性方程）是等价的：
+再将公式 (11) 代回 (8)，这表明随机过程视角（期望的导数）和PDE视角（连续性方程）是等价的：
 
 $$
-\frac{d}{dt}\mathbb{E}_{X_t}[h(X_t)] = \mathbb{E}_{X_t}[\nabla h(X_t)^T v_t^*(X_t)] \tag{12}
+\frac{\mathrm{d}}{\mathrm{d}t}\mathbb{E}_{X_t}[h(X_t)] = \mathbb{E}_{X_t}[\nabla h(X_t)^T v_t^*(X_t)] \tag{12}
 $$
 
 因此也就说明了 $X_t$ 满足连续性方程。
@@ -160,7 +159,7 @@ $$
 考虑 Rectified Flow $Z_t$，它满足 ODE：
 
 $$
-\frac{d}{dt}Z_t = v_t^*(Z_t) \tag{13}
+\frac{\mathrm{d}}{\mathrm{d}t}Z_t = v_t^*(Z_t) \tag{13}
 $$
 
 其中：
